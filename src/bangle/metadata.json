@@ -1,0 +1,16 @@
+{
+  "id": "beatlab_ppg",
+  "name": "Beatlab PPG Recorder",
+  "shortName": "blppgrec",
+  "version": "0.04",
+  "description": "This application records heartrate, confidence, and raw PPG data at ~25 Hz",
+  "icon": "app.png",
+  "tags": "",
+  "type": "clock",
+  "supports": ["BANGLEJS2"],
+  "readme": "README.md",
+  "storage": [
+    { "name": "blppgrec.app.js", "url": "app.js" },
+    { "name": "blppgrec.img", "url": "app-icon.js", "evaluate": true }
+  ]
+}

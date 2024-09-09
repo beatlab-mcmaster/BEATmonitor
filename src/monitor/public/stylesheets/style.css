@@ -1,0 +1,104 @@
+/** style.css
+ * Author: Maya B. Flannery
+ * Created: 2024-03-27
+ * Description: Basic style sheet for dark background. */
+
+/* Color help: https://html-color-codes.info/color-names/ */
+
+body {
+    background-color: black;
+    color: rgb(230, 230, 230);
+    font-family: Andale Mono;
+}
+
+.page__header {
+    position: fixed;
+    top: 0px;
+    z-index: 999;
+    background-color: black;
+    width: 100%;
+}
+
+.page__content {
+    margin-top: 170px;
+}
+
+#title-top {
+    font-size: xx-large;
+    text-align: center;
+}
+
+/* Table formatting */
+.divTable {
+    padding: 5px;
+    width: 100%;
+}
+
+/* HTMLtable.com */
+.divTable {
+    display: table;
+    border: black;
+    border-style: solid;
+}
+.divTableRow {
+    display: table-row;
+}
+.divTableHeading {
+    display: table-header-group;
+    background: black;
+    font-size: large;
+}
+.divTableCell {
+    display: table-cell;
+    background: rgb(30, 30, 30);
+    text-align: center;
+    border: 1px solid black;
+    font-size: small;
+    vertical-align: middle;
+}
+.divTableHead {
+    display: table-cell;
+    text-align: center;
+}
+.divTableHeading {
+    display: table-header-group;
+}
+.divTableFoot {
+    display: table-footer-group;
+}
+.divTableBody {
+    display: table-row-group;
+}
+
+select,
+input {
+    color: rgb(220, 220, 220);
+    background-color: rgb(50, 50, 50);
+}
+
+button {
+    font-size: large;
+    border: 1px solid;
+    color: rgb(220, 220, 220);
+    background-color: rgb(50, 50, 50);
+    margin: 5px;
+    border-radius: 1px;
+    border-color: darkgray;
+    transition-duration: 0.4s;
+    opacity: 70%;
+}
+button:hover {
+    opacity: 100%;
+}
+.btn-small {
+    font-size: xx-small;
+}
+
+*[id^="btn-start"] {
+    background-color: rgb(36, 62, 0);
+    border-color: darkseagreen;
+}
+*[id^="btn-stop"] {
+    background-color: rgb(91, 63, 23);
+    border-color: darksalmon;
+}
