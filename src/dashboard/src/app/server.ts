@@ -140,6 +140,9 @@ io.on("connection", (socket: Socket) => {
           case "sendCommand":
             e.sendEvent(data.msg);
             break;
+          case "getStorageList":
+            e.getStorageInfo();
+            break;
         }
       });
     } else {
