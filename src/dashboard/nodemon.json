@@ -1,0 +1,5 @@
+{
+  "nodemonConfig": {
+    "delay": "3"
+  }
+}
