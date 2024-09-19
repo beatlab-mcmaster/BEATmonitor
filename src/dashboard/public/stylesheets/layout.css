@@ -106,18 +106,18 @@ h3 {
 .watchContainer {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
   gap: 3px 3px;
   grid-auto-flow: row;
   grid-template-areas:
     "tName tDevice tNearby tConnected tState tTime"
     "watchName device nearby connected state timeSync"
     "buttons buttons buttons buttons buttons buttons"
-    "tStorage tStorage tStorage tProgress tProgress tProgress";
+    "tStorage tStorage tStorage tProgress tProgress tProgress"
     "storage storage storage progress progress progress";
   margin: 20px;
   padding: 5px;
-  background-color: rgb(37,37,37);
+  background-color: rgb(37, 37, 37);
 }
 
 .buttons {
@@ -189,8 +189,8 @@ h3 {
 }
 
 button {
-  background-color: rgba(150,150,150,.5);
-color: white;
-border: none;
-margin-left: 20px;
+  background-color: rgba(150, 150, 150, 0.5);
+  color: white;
+  border: none;
+  margin-left: 20px;
 }
