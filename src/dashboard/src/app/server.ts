@@ -113,6 +113,52 @@ io.on("connection", (socket: Socket) => {
     logger.log("info", `Client UI: ${msg}`);
   });
 
+  socket.on("btn-click", (data) => {
+    logger.log(
+      "info",
+      `Button click: ${data.cmd} on device: ${data.device} [msg: ${data.msg}]`,
+    );
+    if (data.device == "all") {
+      knownWatches.forEach((e) => {
+        switch (data.cmd) {
+          case "recordStart":
+            e.startRecording();
+            break;
+          case "recordStop":
+            e.stopRecording();
+            break;
+          case "sync":
+            e.setTime();
+            break;
+          case "sendCommand":
+            e.sendEvent(data.msg);
+            break;
+        }
+      });
+    } else {
+      switch (data.cmd) {
+        case "recordStart":
+          knownWatches.get(data.device).startRecording();
+          break;
+        case "recordStop":
+          knownWatches.get(data.device).stopRecording();
+          break;
+        case "sync":
+          knownWatches.get(data.device).setTime();
+          break;
+        case "getStorageList":
+          knownWatches.get(data.device).getStorageInfo();
+          break;
+        case "sendFiles":
+          knownWatches.get(data.device).getDataFile();
+          break;
+        case "sendCommand":
+          knownWatches.get(data.device).sendEvent(data.msg);
+          break;
+      }
+    }
+  });
+
   // Forward watch messages
   knownWatches.forEach((e) => {
     e.on("watchMessage", (data) => {

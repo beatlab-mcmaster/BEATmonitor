@@ -31,14 +31,14 @@ let emitCommand = function (cmd: string, device: string): void {
 let addButtons = function (
   id: string,
   btns: { [key: string]: string },
-  device: "all" | "device",
+  device: "all",
 ): void {
   let selElement = document.getElementById(id);
   if (selElement != null) {
     for (var b in btns) {
       let newButton = document.createElement("button");
       newButton.className = "btn-control";
-      newButton.id = `btn-${b}`;
+      newButton.id = `btn-${device}-${b}`;
       newButton.value = b;
       newButton.textContent = btns[b];
       newButton.addEventListener("click", (e) => {
