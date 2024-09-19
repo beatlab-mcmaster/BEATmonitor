@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Record cardiac activity with Bangle.js 2 smartwatch
 
 ## Main publication
