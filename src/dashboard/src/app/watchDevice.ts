@@ -255,6 +255,7 @@ class WatchDevice extends EventEmitter {
         },
         (data) => {
           this.storage = data.replace(/(\x01)|(\r\n)>/g, "").split(",");
+          this.getInfoSingle("storage");
           this._disconnect();
           setTimeout(() => {
             resolve();
@@ -325,6 +326,7 @@ class WatchDevice extends EventEmitter {
               } else if (ln.includes("[INFO] Reached EOF")) {
                 // When watch reaches end of storage file
                 this.progressMsg = ln;
+                this.getInfoSingle("progress");
                 // this.downloads.push(recievedFile);
                 try {
                   // write file to computer
@@ -460,6 +462,7 @@ class WatchDevice extends EventEmitter {
   _connect(openCallback, dataCallback) {
     this._logging(`Connecting...`);
     this.connected = true;
+    this.getInfoSingle("connected");
     try {
       this.peripheral.connect((error) => {
         if (error) {
@@ -542,6 +545,7 @@ class WatchDevice extends EventEmitter {
       this._logging(err);
     }
     this.connected = false;
+    this.getInfoSingle("connected");
   }
 
   // Timestamp logs
