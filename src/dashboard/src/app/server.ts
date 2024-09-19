@@ -31,12 +31,19 @@ app.get("/", (req, res) => {
   res.sendFile(settings.index); // Send dashboard to browser
 });
 
+// Create directories
+for (const dir of Object.values(settings.directory)) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
 // Check for known watches
-fs.readdirSync(settings.dWatchList).forEach((file) => {
+fs.readdirSync(settings.directory.watchList).forEach((file) => {
   if (file.endsWith(".json")) {
     logger.log("info", `Reading known watch data: ${file}`);
     let fWatchData = JSON.parse(
-      fs.readFileSync(join(settings.dWatchList, file)).toString(),
+      fs.readFileSync(join(settings.directory.watchList, file)).toString(),
     );
     // Add the found watch to known watches with watch constructor
     knownWatches.set(

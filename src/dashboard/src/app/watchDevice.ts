@@ -63,7 +63,7 @@ class WatchDevice extends EventEmitter {
       serialNumber: this.serialNumber,
     };
     fs.writeFile(
-      settings.dWatchList + this.deviceId + ".json",
+      settings.directory.watchList + this.deviceId + ".json",
       JSON.stringify(data),
       (err) => {
         if (err) {

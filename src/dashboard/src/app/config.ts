@@ -5,8 +5,10 @@ const __dirname = join(dirname(fileURLToPath(import.meta.url)), "../");
 
 const settings = {
   // Directory settings
-  dWatchList: join(__dirname, "watchData/watchList/"),
-  dTransferredData: join(__dirname, "watchData/transferredData/"),
+  directory: {
+    watchList: join(__dirname, "watchData/watchList/"),
+    transferredData: join(__dirname, "watchData/transferredData/"),
+  },
 
   // Server settings
   port: 3001,
