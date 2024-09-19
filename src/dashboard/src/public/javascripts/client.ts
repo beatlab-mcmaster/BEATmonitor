@@ -42,10 +42,23 @@ socket.on("watchInfoAll", (data) => {
 
 socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
-    let updateElement = document.getElementById(
-      `${data.DeviceID}-${data.component}`,
-    );
-    updateElement.textContent = data.value;
+    if (data.component == "storage") {
+      let updateStorage = document.getElementById(
+        `storageList-${data.DeviceID}`,
+      );
+      data.value.forEach((e) => {
+        console.log(e);
+        let option = document.createElement("option");
+        option.value = e;
+        option.innerHTML = e;
+        updateStorage.appendChild(option);
+      });
+    } else {
+      let updateElement = document.getElementById(
+        `${data.DeviceID}-${data.component}`,
+      );
+      updateElement.textContent = data.value;
+    }
   } else {
   }
 });
