@@ -2,6 +2,6 @@
 
 **/node_modules/*
 **/logs/*
-**/app/*
-**/public/javascripts/*
+src/dashboard/app/*
+src/dashboard/public/javascripts/*
 **/watchData/watchList/*
