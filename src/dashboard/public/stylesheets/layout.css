@@ -1,0 +1,196 @@
+/* https://html-color-codes.info/color-names/ */
+:root {
+  --main-bg-color: black;
+  --main-fg-color: white;
+  --secondary-bg-color: rgb(75, 75, 75);
+  --secondary-fg-color: white;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  background-color: var(--main-bg-color);
+  color: rgb(230, 230, 230);
+  font-family: Arial;
+}
+
+h2,
+h3 {
+  margin: 0px;
+}
+
+.ui-grid {
+  border: 0px solid bisque;
+}
+
+.ui-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 1fr 12fr 6fr;
+  grid-template-rows: 2fr 1fr 6fr 9fr 2fr 1fr;
+  gap: 0px 0px;
+  grid-template-areas:
+    "header header header"
+    "leftSide main-controls rightTitle"
+    "leftSide watchList graph"
+    "leftSide watchList info"
+    "leftSide commands info"
+    "footer footer footer";
+  & > * {
+    border-left: 2px solid rgba(0, 0, 0, 0);
+    margin: 5px;
+  }
+  & > :hover {
+    border-left: 2px solid rgb(120, 120, 120);
+  }
+}
+
+.footer {
+  grid-area: footer;
+}
+
+.header {
+  grid-area: header;
+}
+
+.main-controls {
+  grid-area: main-controls;
+}
+
+.watch-list {
+  grid-area: watchList;
+  overflow-y: scroll;
+}
+
+.graph {
+  grid-area: graph;
+}
+
+.right-title {
+  grid-area: rightTitle;
+}
+
+.commands {
+  grid-area: commands;
+  overflow-y: scroll;
+}
+
+.info {
+  grid-area: info;
+  overflow-y: scroll;
+}
+
+.left-side {
+  grid-area: leftSide;
+}
+
+.side-link {
+  text-align: center;
+  background-color: rgb(53, 53, 53);
+  padding-left: 10px;
+  padding-right: 5px;
+  padding-top: 25px;
+  padding-bottom: 25px;
+}
+
+/* Watch list layout */
+.watchContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 3px 3px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "tName tDevice tNearby tConnected tState tTime"
+    "watchName device nearby connected state timeSync"
+    "buttons buttons buttons buttons buttons buttons"
+    "tStorage tStorage tStorage tProgress tProgress tProgress";
+    "storage storage storage progress progress progress";
+  margin: 20px;
+  padding: 5px;
+  background-color: rgb(37,37,37);
+}
+
+.buttons {
+  grid-area: buttons;
+}
+
+.storage {
+  grid-area: storage;
+}
+
+.progress {
+  grid-area: progress;
+}
+
+.watchName {
+  grid-area: watchName;
+}
+
+.nearby {
+  grid-area: nearby;
+}
+
+.connected {
+  grid-area: connected;
+}
+
+.state {
+  grid-area: state;
+}
+
+.timeSync {
+  grid-area: timeSync;
+}
+
+.device {
+  grid-area: device;
+}
+
+.tName {
+  grid-area: tName;
+}
+
+.tNearby {
+  grid-area: tNearby;
+}
+
+.tConnected {
+  grid-area: tConnected;
+}
+
+.tState {
+  grid-area: tState;
+}
+
+.tTime {
+  grid-area: tTime;
+}
+
+.tDevice {
+  grid-area: tDevice;
+}
+
+.tStorage {
+  grid-area: tStorage;
+}
+
+.tProgress {
+  grid-area: tProgress;
+}
+
+button {
+  background-color: rgba(150,150,150,.5);
+color: white;
+border: none;
+margin-left: 20px;
+}
