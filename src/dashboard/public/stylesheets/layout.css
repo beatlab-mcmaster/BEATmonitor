@@ -103,89 +103,94 @@ h3 {
 }
 
 /* Watch list layout */
+
 .watchContainer {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 4fr 1fr 6fr 1fr 2fr 1fr 4fr 1fr 4fr 1fr 2fr;
+  grid-template-rows: 1fr 1fr 1fr;
   gap: 3px 3px;
   grid-auto-flow: row;
   grid-template-areas:
-    "tName tDevice tNearby tConnected tState tTime"
-    "watchName device nearby connected state timeSync"
-    "buttons buttons buttons buttons buttons buttons"
-    "tStorage tStorage tStorage tProgress tProgress tProgress"
-    "storage storage storage progress progress progress";
+    "tWatch watchName tDevice device tNearby nearby tConnected connected tState state tTimeSync timeSync"
+    "tStorage storage storage storage storage storage tProgress progress progress progress progress progress"
+    "buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons";
   margin: 20px;
   padding: 5px;
   background-color: rgb(37, 37, 37);
 }
 
-.buttons {
-  grid-area: buttons;
-}
-
-.storage {
-  grid-area: storage;
-}
-
-.progress {
-  grid-area: progress;
+.tWatch {
+  grid-area: tWatch;
 }
 
 .watchName {
   grid-area: watchName;
 }
 
-.nearby {
-  grid-area: nearby;
-}
-
-.connected {
-  grid-area: connected;
-}
-
-.state {
-  grid-area: state;
-}
-
-.timeSync {
-  grid-area: timeSync;
+.tDevice {
+  grid-area: tDevice;
 }
 
 .device {
   grid-area: device;
 }
 
-.tName {
-  grid-area: tName;
-}
-
 .tNearby {
   grid-area: tNearby;
+}
+
+.nearby {
+  grid-area: nearby;
 }
 
 .tConnected {
   grid-area: tConnected;
 }
 
+.connected {
+  grid-area: connected;
+}
+
 .tState {
   grid-area: tState;
 }
 
-.tTime {
-  grid-area: tTime;
+.state {
+  grid-area: state;
 }
 
-.tDevice {
-  grid-area: tDevice;
+.tTimeSync {
+  grid-area: tTimeSync;
+}
+
+.timeSync {
+  grid-area: timeSync;
 }
 
 .tStorage {
   grid-area: tStorage;
 }
 
+.storage {
+  grid-area: storage;
+}
+
 .tProgress {
   grid-area: tProgress;
+}
+
+.progress {
+  grid-area: progress;
+}
+
+.buttons {
+  grid-area: buttons;
+  justify-self: end;
+  align-self: center;
+}
+
+.na {
+  grid-area: na;
 }
 
 button {
@@ -193,4 +198,16 @@ button {
   color: white;
   border: none;
   margin-left: 20px;
+}
+
+.textbox {
+  background: silver;
+}
+
+select {
+  background-color: darkgray;
+}
+
+.icon-sm {
+  width: 20px;
 }

@@ -67,26 +67,53 @@ socket.on("watchInfoSingle", (data) => {
  * ...
  * */
 const watchDivs = [
-  "buttons",
-  "storage",
-  "progress",
   "watchName",
+  "device",
   "nearby",
   "connected",
   "state",
   "timeSync",
-  "device",
+  "storage",
+  "progress",
+  "buttons",
 ];
 
-const watchTitles = {
-  tName: "Watch",
-  tDevice: "Device",
-  tNearby: "Signal",
-  tConnected: "Connected",
-  tState: "State",
-  tTime: "Time Sync",
-  tStorage: "Storage",
-  tProgress: "Progress",
+const watchIcons = {
+  tWatch: {
+    img: "/images/id-card-clip-svgrepo-com.svg",
+    alt: "Watch/Participant",
+  },
+  // "/images/id-card-clip-svgrepo-com-hl.svg"
+  // "Watch/Participant"
+  tDevice: { img: "/images/watch-square-svgrepo-com.svg", alt: "Device" },
+  // "/images/bluetooth-svgrepo-com.svg"
+  // "Bluetooth on"
+  tNearby: {
+    img: "/images/bluetooth-off-svgrepo-com.svg",
+    alt: "Bluetooth off",
+  },
+  tConnected: { img: "", alt: "" },
+  tState: {
+    img: "/images/waiting-arrow-svgrepo-com.svg",
+    alt: "Watch is waiting",
+  },
+  // "/images/recording-sharp-svgrepo-com.svg"
+  // "Watch is recording"
+
+  tTimeSync: {
+    img: "/images/clock-circle-svgrepo-com-red.svg",
+    alt: "Time not synchronized",
+  },
+  // "/images/clock-circle-svgrepo-com-green.svg"
+  // "Time synchronized"
+  tStorage: { img: "/images/files-svgrepo-com.svg", alt: "Files" },
+  tProgress: {
+    img: "/images/progress-arrows-svgrepo-com.svg",
+    alt: "Progress idle",
+  },
+  // "/images/progress-arrows-svgrepo-com-prog.svg"
+  // "Progress working"
+  na: { img: "", alt: "" },
 };
 
 let emitCommand = function (cmd: string, device: string, msg: string): void {
@@ -143,11 +170,13 @@ let addWatch = function (id: string, deviceId: string) {
     childContainer.textContent = "";
     watchContainer.appendChild(childContainer);
   });
-  for (const [section, title] of Object.entries(watchTitles)) {
-    let childContainer = document.createElement("div");
-    childContainer.className = section;
+  for (const [section, icon] of Object.entries(watchIcons)) {
+    let childContainer = document.createElement("img");
+    childContainer.className = [section, "icon-sm"].join(" ");
     childContainer.id = `${deviceId}-${section}`;
-    childContainer.textContent = title;
+    childContainer.src = icon.img;
+    childContainer.alt = icon.alt;
+    childContainer.title = icon.alt;
     watchContainer.appendChild(childContainer);
   }
   selElement.appendChild(watchContainer);
