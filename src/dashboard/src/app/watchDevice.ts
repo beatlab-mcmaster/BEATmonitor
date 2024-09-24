@@ -57,7 +57,7 @@ class WatchDevice extends EventEmitter {
 
   writeWatchDataFile() {
     let data = {
-      deviceID: this.deviceId,
+      deviceId: this.deviceId,
       watchName: this.watchName,
       MACid: this.MACid,
       serialNumber: this.serialNumber,
@@ -461,16 +461,17 @@ class WatchDevice extends EventEmitter {
 
   _connect(openCallback, dataCallback) {
     this._logging(`Connecting...`);
-    this.connected = true;
-    this.getInfoSingle("connected");
     try {
       this.peripheral.connect((error) => {
         if (error) {
           this._logging("ERROR Connecting");
           this.peripheral = undefined;
           this.connected = false;
+          this.getInfoSingle("connected");
           return;
         }
+        this.connected = true;
+        this.getInfoSingle("connected");
         this.peripheral.discoverAllServicesAndCharacteristics(
           (error, services, characteristics) => {
             function findByUUID(list, uuid) {

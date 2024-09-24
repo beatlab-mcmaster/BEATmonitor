@@ -47,7 +47,7 @@ fs.readdirSync(settings.directory.watchList).forEach((file) => {
     );
     // Add the found watch to known watches with watch constructor
     knownWatches.set(
-      fWatchData.deviceID,
+      fWatchData.deviceId,
       new WatchDevice(undefined, fWatchData),
     );
   }
