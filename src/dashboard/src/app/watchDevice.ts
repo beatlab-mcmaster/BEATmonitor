@@ -1,3 +1,7 @@
+/** watchDevice.ts
+ * Author: Maya B. Flannery
+ * Description: */
+
 import fs from "fs";
 import logger from "./logger.js";
 import { settings, join } from "./config.js";
@@ -18,7 +22,7 @@ class WatchDevice extends EventEmitter {
   state: string = "Unknown";
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
-  timeSyncAccuracy: string | number = "na - ";
+  timeSyncAccuracy: string | number = "Not synced!";
   progressMsg: string = "";
 
   constructor(

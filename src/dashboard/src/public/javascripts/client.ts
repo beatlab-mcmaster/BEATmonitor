@@ -1,3 +1,8 @@
+/** client.ts
+ * Author: Maya B. Flannery
+ * Description: This script handles socket communication with the web server,
+ * and initializes and handles UI functions. */
+
 import { io } from "../../../node_modules/socket.io/client-dist/socket.io.esm.min.js";
 //import { addButtons, addWatch, updateWatch } from "./interface.js";
 
@@ -42,22 +47,56 @@ socket.on("watchInfoAll", (data) => {
 
 socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
-    if (data.component == "storage") {
-      let updateStorage = document.getElementById(
-        `storageList-${data.DeviceID}`,
-      );
-      data.value.forEach((e) => {
-        console.log(e);
-        let option = document.createElement("option");
-        option.value = e;
-        option.innerHTML = e;
-        updateStorage.appendChild(option);
-      });
-    } else {
-      let updateElement = document.getElementById(
-        `${data.DeviceID}-${data.component}`,
-      );
-      updateElement.textContent = data.value;
+    switch (data.component) {
+      case "connected":
+        data.value
+          ? updateIcon(`${data.DeviceID}-tConnected`, icons.connected)
+          : updateIcon(`${data.DeviceID}-tConnected`, icons.notConnected);
+        break;
+      case "progress":
+        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        break;
+      case "watchName":
+        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        break;
+      case "nearby":
+        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        if (data.value < 1) {
+          updateIcon(`${data.DeviceID}-tNearby`, icons.btNear);
+          document.getElementById(`${data.DeviceID}-watchContainer`).style =
+            "opacity: 100%";
+        } else {
+          updateIcon(`${data.DeviceID}-tNearby`, icons.btNotNear);
+          document.getElementById(`${data.DeviceID}-watchContainer`).style =
+            "opacity: 70%";
+        }
+        break;
+      case "state":
+        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        break;
+      case "timeSync":
+        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        data.value != "Not synced!"
+          ? updateIcon(`${data.DeviceID}-tTimeSync`, icons.synced)
+          : updateIcon(`${data.DeviceID}-tTimeSync`, icons.notSynced);
+        break;
+      case "storage":
+        let updateStorage = document.getElementById(
+          `storageList-${data.DeviceID}`,
+        );
+        data.value.forEach((e) => {
+          console.log(e);
+          let option = document.createElement("option");
+          option.value = e;
+          option.innerHTML = e;
+          updateStorage.appendChild(option);
+        });
+        break;
+      default:
+        let updateElement = document.getElementById(
+          `${data.DeviceID}-${data.component}`,
+        );
+        updateElement.textContent = data.value;
     }
   } else {
   }
@@ -78,42 +117,83 @@ const watchDivs = [
   "buttons",
 ];
 
-const watchIcons = {
-  tWatch: {
+const icons = {
+  watchNorm: {
     img: "/images/id-card-clip-svgrepo-com.svg",
     alt: "Watch/Participant",
   },
-  // "/images/id-card-clip-svgrepo-com-hl.svg"
-  // "Watch/Participant"
-  tDevice: { img: "/images/watch-square-svgrepo-com.svg", alt: "Device" },
-  // "/images/bluetooth-svgrepo-com.svg"
-  // "Bluetooth on"
-  tNearby: {
+  watchHL: {
+    img: "/images/id-card-clip-svgrepo-com-hl.svg",
+    alt: "Watch/Participant",
+  },
+  device: { img: "/images/watch-square-svgrepo-com.svg", alt: "Device" },
+  btNear: { img: "/images/bluetooth-svgrepo-com.svg", alt: "Bluetooth on" },
+  btNotNear: {
     img: "/images/bluetooth-off-svgrepo-com.svg",
     alt: "Bluetooth off",
   },
-  tConnected: { img: "", alt: "" },
-  tState: {
+  notConnected: {
+    img: "/images/link-slash-alt-svgrepo-com.svg",
+    alt: "Not connected to device",
+  },
+  connected: {
+    img: "/images/link-alt-svgrepo-com.svg",
+    alt: "Connected to device",
+  },
+  stateUnknown: {
+    img: "/images/question-circle-svgrepo-com.svg",
+    alt: "Unknown state",
+  },
+  statewaiting: {
     img: "/images/waiting-arrow-svgrepo-com.svg",
     alt: "Watch is waiting",
   },
-  // "/images/recording-sharp-svgrepo-com.svg"
-  // "Watch is recording"
-
-  tTimeSync: {
+  stateRecording: {
+    img: "/images/recording-sharp-svgrepo-com.svg",
+    alt: "Watch is recording",
+  },
+  notSynced: {
     img: "/images/clock-circle-svgrepo-com-red.svg",
     alt: "Time not synchronized",
   },
-  // "/images/clock-circle-svgrepo-com-green.svg"
-  // "Time synchronized"
-  tStorage: { img: "/images/files-svgrepo-com.svg", alt: "Files" },
-  tProgress: {
+  synced: {
+    img: "/images/clock-circle-svgrepo-com-green.svg",
+    alt: "Time synchronized",
+  },
+  noStorage: { img: "/images/files-svgrepo-com.svg", alt: "Files" },
+  progressIdle: {
     img: "/images/progress-arrows-svgrepo-com.svg",
     alt: "Progress idle",
   },
-  // "/images/progress-arrows-svgrepo-com-prog.svg"
-  // "Progress working"
+  progressWorking: {
+    img: "/images/progress-arrows-svgrepo-com-prog.svg",
+    alt: "Progress working",
+  },
   na: { img: "", alt: "" },
+};
+
+const watchIcons = {
+  tWatch: icons.watchNorm,
+  tDevice: icons.device,
+  tNearby: icons.btNotNear,
+  tConnected: icons.notConnected,
+  tState: icons.stateUnknown,
+  tTimeSync: icons.notSynced,
+  tStorage: icons.noStorage,
+  tProgress: icons.progressIdle,
+  na: icons.na,
+};
+
+let updateIcon = function (id: string, icon: object): void {
+  let img = document.getElementById(id);
+  img.src = icon.img;
+  img.alt = icon.alt;
+  img.title = icon.alt;
+};
+
+let updateText = function (id: string, txt: string): void {
+  let el = document.getElementById(id);
+  el.textContent = txt;
 };
 
 let emitCommand = function (cmd: string, device: string, msg: string): void {
@@ -195,8 +275,6 @@ let updateWatch = function (data) {
     data.DeviceID;
   document.getElementById(`${data.DeviceID}-${"progress"}`).textContent =
     data.Progress;
-  document.getElementById(`${data.DeviceID}-${"connected"}`).textContent =
-    data.Connected;
   document.getElementById(`${data.DeviceID}-${"state"}`).textContent =
     data.state;
   document.getElementById(`${data.DeviceID}-${"timeSync"}`).textContent =
@@ -205,12 +283,12 @@ let updateWatch = function (data) {
 
 // Create UI
 let ctlButtons = {
-  sync: "Synchronize Time",
-  recordStart: "Start Recording",
-  recordStop: "Stop Recording",
-  getStorageList: "Get Storage List",
-  getFiles: "Get Files",
-  sendCommand: "Send Command: ",
+  getStorageList: "Get Storage",
+  getFiles: "Get File",
+  sync: "Sync Time",
+  recordStart: "Start Rec",
+  recordStop: "Stop Rec",
+  sendCommand: "Send Cmd: ",
 };
 
 addButtons("main-controls", ctlButtons, "all");
