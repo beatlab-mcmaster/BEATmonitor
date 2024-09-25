@@ -204,7 +204,7 @@ let updateIcon = function (id: string, icon: object): void {
 // Text can be updated as watch parameters change
 let updateText = function (id: string, txt: string): void {
   let el = document.getElementById(id);
-  el.textContent = txt;
+  el?.textContent = txt;
 };
 
 // Object sent to server when buttons are clicked
@@ -234,8 +234,30 @@ let addButtons = function (
         if (e.target != null) {
           // @ts-ignore 'value' should exist on button
           if (e.target.value == "sendCommand") {
+            // With sendCommand, also send textbox value
             // @ts-ignore 'value' should exist on button
             msg = document.getElementById(`txtbox-${device}`).value;
+            // @ts-ignore 'value' should exist on button
+          } else if (e.target.value == "getFiles") {
+            if (device == "all") {
+              // TODO: Clean up
+              // Get all watch names
+              let watches = document.querySelectorAll(
+                `[id$="-watchContainer"]`,
+              );
+              watches.forEach((l) => {
+                // Trim watch id
+                let watch = l.id.replace("-watchContainer", "");
+                // Get selected storage file related to watch
+                msg = document.getElementById(`storageList-${watch}`)?.value;
+                // Emit command for each watch
+                emitCommand(e.target?.value, watch, msg);
+              });
+              return;
+            } else {
+              // Send the name of the selected file
+              msg = document.getElementById(`storageList-${device}`)?.value;
+            }
           }
           // @ts-ignore 'value' should exist on button
           emitCommand(e.target.value, device, msg);

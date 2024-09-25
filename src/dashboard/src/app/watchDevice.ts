@@ -296,6 +296,7 @@ class WatchDevice extends EventEmitter {
                 this.progressMsg = ln; // display progress
               } else if (ln.includes("[Progress]")) {
                 this.progressMsg = ln;
+                this.getInfoSingle("progress");
               } else if (ln.includes(`{"File":`)) {
                 // Parse the filename
                 if (ln.includes("_W")) {
@@ -335,7 +336,7 @@ class WatchDevice extends EventEmitter {
                 try {
                   // write file to computer
                   fs.writeFile(
-                    receivedFileName,
+                    settings.directory.transferredData + receivedFileName,
                     recievedFile.join("\n"),
                     (err) => {
                       if (err) {

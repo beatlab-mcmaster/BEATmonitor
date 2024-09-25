@@ -143,6 +143,13 @@ io.on("connection", (socket: Socket) => {
           case "getStorageList":
             e.getStorageInfo();
             break;
+          case "getFiles":
+            if (data.msg != undefined) {
+              e.getDataFile(data.msg);
+            } else {
+              console.log(`skipping device: ${data.device}`);
+            }
+            break;
         }
       });
     } else {
@@ -164,6 +171,9 @@ io.on("connection", (socket: Socket) => {
           break;
         case "sendCommand":
           knownWatches.get(data.device).sendEvent(data.msg);
+          break;
+        case "getFiles":
+          knownWatches.get(data.device).getDataFile(data.msg);
           break;
       }
     }
