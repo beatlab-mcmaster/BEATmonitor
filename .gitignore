@@ -1,5 +1,5 @@
 **/.DS_Store
-.session.vim
+Session.vim
 
 **/node_modules/*
 **/logs/*
