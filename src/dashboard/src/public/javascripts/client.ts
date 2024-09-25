@@ -4,12 +4,13 @@
  * and initializes and handles UI functions. */
 
 import { io } from "../../../node_modules/socket.io/client-dist/socket.io.esm.min.js";
-//import { addButtons, addWatch, updateWatch } from "./interface.js";
+//import { addButtons, addWatch, updateWatch } from "./interface.js";  // TODO: interface.ts is included in this script -- scope of socket??
 
 // Message handling
 const socket = io();
 
 socket.on("connect", () => {
+  // If connected to server
   console.log("Socket connected");
 });
 
@@ -23,28 +24,35 @@ socket.on("connect_error", (err) => {
 });
 
 socket.on("clearAll", (data) => {
+  // Clear watchList if reconnecting
   document.getElementById("watchList").innerHTML =
     "<h2>Bangle.js watch list</h2>";
 });
 
 socket.on("info", (data) => {
+  // Info messages from server
   console.log(data.msg);
 });
 
 socket.on("watch", (data) => {
+  // Watch messages from server
   console.log(data);
 });
 
+// Received when a watchDevice instance is created
 socket.on("watchInfoAll", (data) => {
   console.log(data);
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
+    // Update existing watch
     updateWatch(data);
   } else {
+    // Add new watch to list
     addWatch("watchList", data.DeviceID);
     addButtons(`${data.DeviceID}-buttons`, ctlButtons, data.DeviceID);
   }
 });
 
+// Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
     switch (data.component) {
@@ -81,6 +89,7 @@ socket.on("watchInfoSingle", (data) => {
           : updateIcon(`${data.DeviceID}-tTimeSync`, icons.notSynced);
         break;
       case "storage":
+        // Add file list to storage selector
         let updateStorage = document.getElementById(
           `storageList-${data.DeviceID}`,
         );
@@ -102,9 +111,7 @@ socket.on("watchInfoSingle", (data) => {
   }
 });
 
-/** Emits signal to server
- * ...
- * */
+// Elements of a 'watchContainer' listed in UI
 const watchDivs = [
   "watchName",
   "device",
@@ -117,6 +124,7 @@ const watchDivs = [
   "buttons",
 ];
 
+// Icon file paths and descriptions
 const icons = {
   watchNorm: {
     img: "/images/id-card-clip-svgrepo-com.svg",
@@ -172,6 +180,7 @@ const icons = {
   na: { img: "", alt: "" },
 };
 
+// Default icons
 const watchIcons = {
   tWatch: icons.watchNorm,
   tDevice: icons.device,
@@ -184,6 +193,7 @@ const watchIcons = {
   na: icons.na,
 };
 
+// Icons can be updated as watch parameters change
 let updateIcon = function (id: string, icon: object): void {
   let img = document.getElementById(id);
   img.src = icon.img;
@@ -191,16 +201,19 @@ let updateIcon = function (id: string, icon: object): void {
   img.title = icon.alt;
 };
 
+// Text can be updated as watch parameters change
 let updateText = function (id: string, txt: string): void {
   let el = document.getElementById(id);
   el.textContent = txt;
 };
 
+// Object sent to server when buttons are clicked
 let emitCommand = function (cmd: string, device: string, msg: string): void {
   console.log(`emitCommand: cmd=${cmd}; device=${device}; msg=${msg}`);
   socket.emit("btn-click", { cmd, device, msg });
 };
 
+// Function to add buttons and listeners for each watch added to the list
 let addButtons = function (
   id: string,
   btns: { [key: string]: string },
@@ -208,6 +221,7 @@ let addButtons = function (
 ): void {
   let selElement = document.getElementById(id);
   if (selElement != null) {
+    // Add each button
     for (var b in btns) {
       let newButton = document.createElement("button");
       let msg = "";
@@ -215,6 +229,7 @@ let addButtons = function (
       newButton.id = `btn-${device}-${b}`;
       newButton.value = b;
       newButton.textContent = btns[b];
+      // Buttons emit command to server when clicked
       newButton.addEventListener("click", (e) => {
         if (e.target != null) {
           // @ts-ignore 'value' should exist on button
@@ -228,6 +243,7 @@ let addButtons = function (
       });
       selElement.appendChild(newButton);
     }
+    // Add input for low-level commands to watch
     let newTextbox = document.createElement("input");
     newTextbox.className = "textbox";
     newTextbox.id = `txtbox-${device}`;
@@ -237,12 +253,14 @@ let addButtons = function (
   }
 };
 
+// Create a watchContainer for each watch
 let addWatch = function (id: string, deviceId: string) {
   console.log("adding: ", id, deviceId);
   let selElement = document.getElementById(id);
   let watchContainer = document.createElement("div");
   watchContainer.className = "watchContainer";
   watchContainer.id = `${deviceId}-watchContainer`;
+  // Add individual watch components
   watchDivs.forEach((e) => {
     let childContainer = document.createElement("div");
     childContainer.className = e;
@@ -250,6 +268,7 @@ let addWatch = function (id: string, deviceId: string) {
     childContainer.textContent = "";
     watchContainer.appendChild(childContainer);
   });
+  // Add icons
   for (const [section, icon] of Object.entries(watchIcons)) {
     let childContainer = document.createElement("img");
     childContainer.className = [section, "icon-sm"].join(" ");
@@ -267,6 +286,7 @@ let addWatch = function (id: string, deviceId: string) {
   document.getElementById(`${deviceId}-storage`).appendChild(newStorage);
 };
 
+// TODO: combine with single update function
 let updateWatch = function (data) {
   console.log(data);
   document.getElementById(`${data.DeviceID}-${"watchName"}`).textContent =
