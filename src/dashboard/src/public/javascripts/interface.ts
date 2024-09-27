@@ -1,6 +1,4 @@
-/** Emits signal to server
- * ...
- * */
+/** This code is included in client.ts (import conflicts) * */
 const watchDivs = [
   "buttons",
   "storage",
