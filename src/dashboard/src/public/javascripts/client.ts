@@ -55,6 +55,7 @@ socket.on("watchInfoAll", (data) => {
 // Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
+    let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
     switch (data.component) {
       case "connected":
         data.value
@@ -69,7 +70,6 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "nearby":
         updateText(`${data.DeviceID}-${data.component}`, data.value);
-        let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
         if (data.value < 1) {
           updateIcon(`${data.DeviceID}-tNearby`, icons.btNear);
           elp.style.opacity = "100%";
@@ -83,10 +83,13 @@ socket.on("watchInfoSingle", (data) => {
         // states:  Waiting / Recording / Sending / Unknown
         if (data.value == "Recording") {
           updateIcon(`${data.DeviceID}-tState`, icons.stateRecording);
+          elp.style.backgroundColor = "maroon";
         } else if (data.value == "Waiting") {
           updateIcon(`${data.DeviceID}-tState`, icons.stateWaiting);
+          elp.style.backgroundColor = "rgb(37, 37, 37)";
         } else {
           updateIcon(`${data.DeviceID}-tState`, icons.stateUnknown);
+          elp.style.backgroundColor = "rgb(37, 37, 37)";
         }
         break;
       case "timeSync":
