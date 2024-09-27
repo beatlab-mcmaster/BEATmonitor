@@ -55,10 +55,11 @@ class WatchDevice extends EventEmitter {
     return this.peripheralUpdated;
   }
 
-  setPeripheral(peripheral: Peripheral) {
+  async setPeripheral(peripheral: Peripheral) {
     this.peripheral = peripheral;
     this.deviceId = peripheral.advertisement.localName;
     this.peripheralUpdated = true;
+    await this.getPhysicalId();
     this.writeWatchDataFile();
   }
 
@@ -228,7 +229,7 @@ class WatchDevice extends EventEmitter {
 
   // The physical id is configured when loading the innocents app to the watch
   //  as 'Wxxx' (stored as a json file on the watch)
-  getPhysicalID() {
+  getPhysicalId() {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
@@ -242,6 +243,7 @@ class WatchDevice extends EventEmitter {
           // Store as watchName
           this.watchName = data.match(/W.../);
           this._logging(`got id: ${this.watchName}`);
+          this.getInfoSingle("watchName");
           this._disconnect();
           setTimeout(() => {
             resolve();

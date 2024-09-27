@@ -64,6 +64,7 @@ socket.on("watchInfoSingle", (data) => {
         updateText(`${data.DeviceID}-${data.component}`, data.value);
         break;
       case "watchName":
+        console.log(data);
         updateText(`${data.DeviceID}-${data.component}`, data.value);
         break;
       case "nearby":
@@ -341,6 +342,7 @@ let updateWatch = function (data) {
 
 // Create UI
 let ctlButtons = {
+  getName: "Get Name",
   getStorageList: "Get Storage",
   getFiles: "Get File",
   sync: "Sync Time",
@@ -351,7 +353,6 @@ let ctlButtons = {
 
 addButtons("main-controls", ctlButtons, "all");
 
-// TODO: column headers
-// TODO: colapsible
+// TODO: collapsible
 // TODO: explain symbols/offsets/...
 // TODO: center title/padding

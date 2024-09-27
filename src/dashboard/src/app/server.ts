@@ -154,6 +154,9 @@ io.on("connection", (socket: Socket) => {
       });
     } else {
       switch (data.cmd) {
+        case "getName":
+          knownWatches.get(data.device).getPhysicalId();
+          break;
         case "recordStart":
           knownWatches.get(data.device).startRecording();
           break;
@@ -216,7 +219,5 @@ let x = function (msg: string): void {
 x(`> Module directory name:`);
 
 // TODO: Resume function -- search for timestamp
-//
 // TODO: Events/low-level commant box
-//
 // TODO: Timesync when finished recording
