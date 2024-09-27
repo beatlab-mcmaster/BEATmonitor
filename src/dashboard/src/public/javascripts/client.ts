@@ -25,9 +25,7 @@ socket.on("connect_error", (err) => {
 socket.on("clearAll", () => {
   // Clear watchList if reconnecting
   let el = document.getElementById("watchList");
-  el
-    ? (el.innerHTML = "<h2>Bangle.js watch list</h2>")
-    : console.log("clearAll: watchlist is null");
+  el ? (el.innerHTML = "") : console.log("clearAll: watchlist is null");
 });
 
 socket.on("info", (data: object) => {

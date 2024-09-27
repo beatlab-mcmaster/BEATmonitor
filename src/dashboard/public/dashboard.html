@@ -46,55 +46,98 @@
           /></a>
         </div>
       </div>
-      <div class="ui-grid main-controls" id="main-controls">
-        <h2>Controls</h2>
-      </div>
       <div
-        class="ui-grid left-side"
+        class="ui-grid main-controls"
         style="
           display: flex;
-          justify-content: center;
-          flex-direction: column;
+          justify-content: start;
+          flex-direction: row;
           height: 100%;
         "
       >
-        <div class="side-link">
-          <a
-            target="_blank"
-            href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
-            ><img
-              src="/images/question-mark-button-svgrepo-com.svg"
-              alt="Quick help"
-              title="Quick help"
-              style="margin: 5px; width: 50px; height: 50px" /></a
-          ><br />Help
+        <div
+          style="
+            display: flex;
+            justify-content: left;
+            flex-direction: row;
+            height: 100%;
+            align-items: center;
+            padding-right: 50px;
+          "
+        >
+          <div class="side-link">
+            <p style="vertical-align: middle; margin: 0px">
+              Help
+              <a
+                target="_blank"
+                href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
+                ><img
+                  src="/images/question-mark-button-svgrepo-com.svg"
+                  alt="Quick help"
+                  title="Quick help"
+                  style="
+                    margin: 5px;
+                    width: 30px;
+                    height: 30px;
+                    vertical-align: middle;
+                  "
+              /></a>
+            </p>
+          </div>
+          <div class="side-link">
+            <p style="vertical-align: middle; margin: 0px">
+              Docs
+              <a
+                target="_blank"
+                href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
+                ><img
+                  src="/images/book-closed-svgrepo-com.svg"
+                  alt="Documentation"
+                  title="Documentation"
+                  style="
+                    margin: 5px;
+                    width: 30px;
+                    height: 30px;
+                    vertical-align: middle;
+                  "
+              /></a>
+            </p>
+          </div>
+          <div class="side-link">
+            <p style="vertical-align: middle; margin: 0px">
+              GitHub
+              <a
+                target="_blank"
+                href="https://github.com/beatlab-mcmaster/BEATmonitor"
+                ><img
+                  src="/images/github-142-svgrepo-com.svg"
+                  alt="GitHub Repository"
+                  title="GitHub Repository"
+                  style="
+                    margin: 5px;
+                    width: 30px;
+                    height: 30px;
+                    vertical-align: middle;
+                  "
+              /></a>
+            </p>
+          </div>
         </div>
-        <div class="side-link">
-          <a
-            target="_blank"
-            href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
-            ><img
-              src="/images/book-closed-svgrepo-com.svg"
-              alt="Documentation"
-              title="Documentation"
-              style="margin: 5px; width: 50px; height: 50px" /></a
-          ><br />Docs
-        </div>
-        <div class="side-link">
-          <a
-            target="_blank"
-            href="https://github.com/beatlab-mcmaster/BEATmonitor"
-            ><img
-              src="/images/github-142-svgrepo-com.svg"
-              alt="GitHub Repository"
-              title="GitHub Repository"
-              style="margin: 5px; width: 50px; height: 50px" /></a
-          ><br />GitHub
-        </div>
+        <div id="main-controls"><h2>Controls</h2></div>
       </div>
-      <div class="ui-grid watch-list" id="watchList">
+      <div class="ui-grid left-side"></div>
+      <div class="ui-grid watch-list-title" id="watchListTitle">
         <h2>Bangle.js watch list</h2>
+        <div class="watchContainer watchHeader">
+          <div class="tWatch">Watch/Participant ID</div>
+          <div class="tDevice">Device Name</div>
+          <div class="tNearby">Bluetooth Signal</div>
+          <div class="tConnected">Connection Status</div>
+          <div class="tState">Watch Status</div>
+          <div class="tTimeSync">Synchronization Offset</div>
+        </div>
       </div>
+      <div class="ui-grid watch-list" id="watchList"></div>
       <!-- <div class="ui-grid right-title"><h2>Watch Information</h2></div> -->
       <!-- <div class="ui-grid graph"> -->
       <!--   <h3>Data view</h3> -->
