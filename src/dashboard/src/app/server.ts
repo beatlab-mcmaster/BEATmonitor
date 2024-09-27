@@ -11,7 +11,7 @@ import { Server as SocketIOServer, Socket } from "socket.io"; // Communication b
 import fs from "fs";
 import logger from "./logger.js";
 import noble from "@abandonware/noble";
-import { WatchDevice } from "./watchDevice.js";
+import { info, WatchDevice } from "./watchDevice.js";
 import { settings, join } from "./config.js";
 
 // Mapping to track watches
@@ -93,7 +93,7 @@ noble.on("discover", async function (dev) {
         if (dev.advertisement.manufacturerData) {
           let deviceState = JSON.parse(
             // Set to 1 when watch is recording, 0 when ready
-            dev.advertisement.manufacturerData.toString().substr(2),
+            dev.advertisement.manufacturerData.toString().substring(2),
           );
           // Update the device state
           knownWatches.get(nearbyDevice).setState = deviceState.s;
@@ -181,14 +181,14 @@ io.on("connection", (socket: Socket) => {
 
   // Forward watch messages
   knownWatches.forEach((e) => {
-    e.on("watchMessage", (data) => {
+    e.on("watchMessage", (data: info) => {
       console.log("Message from watch --> ", data);
       socket.emit("watch", data);
     });
-    e.on("watchInfoAll", (data) => {
+    e.on("watchInfoAll", (data: info) => {
       socket.emit("watchInfoAll", data);
     });
-    e.on("watchInfoSingle", (data) => {
+    e.on("watchInfoSingle", (data: info) => {
       socket.emit("watchInfoSingle", data);
     });
     e.getInfo();
