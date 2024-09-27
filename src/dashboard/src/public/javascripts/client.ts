@@ -69,14 +69,13 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "nearby":
         updateText(`${data.DeviceID}-${data.component}`, data.value);
+        let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
         if (data.value < 1) {
           updateIcon(`${data.DeviceID}-tNearby`, icons.btNear);
-          document.getElementById(`${data.DeviceID}-watchContainer`).style =
-            "opacity: 100%";
+          elp.style.opacity = "100%";
         } else {
           updateIcon(`${data.DeviceID}-tNearby`, icons.btNotNear);
-          document.getElementById(`${data.DeviceID}-watchContainer`).style =
-            "opacity: 70%";
+          elp.style.opacity = "70%";
         }
         break;
       case "state":
@@ -100,8 +99,8 @@ socket.on("watchInfoSingle", (data) => {
         // Add file list to storage selector
         let updateStorage = document.getElementById(
           `storageList-${data.DeviceID}`,
-        );
-        data.value.forEach((e) => {
+        )!;
+        data.value.forEach((e: string) => {
           console.log(e);
           let option = document.createElement("option");
           option.value = e;
@@ -112,7 +111,7 @@ socket.on("watchInfoSingle", (data) => {
       default:
         let updateElement = document.getElementById(
           `${data.DeviceID}-${data.component}`,
-        );
+        )!;
         updateElement.textContent = data.value;
     }
   } else {
@@ -132,8 +131,9 @@ const watchDivs = [
   "buttons",
 ];
 
+type icon = { img: string; alt: string };
 // Icon file paths and descriptions
-const icons = {
+const icons: { [key: string]: icon } = {
   watchNorm: {
     img: "/images/id-card-clip-svgrepo-com.svg",
     alt: "Watch/Participant",
@@ -202,8 +202,8 @@ const watchIcons = {
 };
 
 // Icons can be updated as watch parameters change
-let updateIcon = function (id: string, icon: object): void {
-  let img = document.getElementById(id);
+let updateIcon = function (id: string, icon: icon): void {
+  let img = document.getElementById(id) as HTMLImageElement;
   img.src = icon.img;
   img.alt = icon.alt;
   img.title = icon.alt;
@@ -211,7 +211,7 @@ let updateIcon = function (id: string, icon: object): void {
 
 // Text can be updated as watch parameters change
 let updateText = function (id: string, txt: string): void {
-  let el = document.getElementById(id);
+  let el = document.getElementById(id)!;
   el.textContent = txt;
 };
 
@@ -238,15 +238,16 @@ let addButtons = function (
       newButton.value = b;
       newButton.textContent = btns[b];
       // Buttons emit command to server when clicked
-      newButton.addEventListener("click", (e) => {
-        if (e.target != null) {
-          // @ts-ignore 'value' should exist on button
-          if (e.target.value == "sendCommand") {
+      newButton.addEventListener("click", (e: MouseEvent) => {
+        let btn = e.target as HTMLButtonElement;
+        if (btn != null) {
+          if (btn.value == "sendCommand") {
             // With sendCommand, also send textbox value
-            // @ts-ignore 'value' should exist on button
-            msg = document.getElementById(`txtbox-${device}`).value;
-            // @ts-ignore 'value' should exist on button
-          } else if (e.target.value == "getFiles") {
+            let el = document.getElementById(
+              `txtbox-${device}`,
+            ) as HTMLInputElement;
+            msg = el.value;
+          } else if (btn.value == "getFiles") {
             if (device == "all") {
               // TODO: Clean up
               // Get all watch names
@@ -257,18 +258,24 @@ let addButtons = function (
                 // Trim watch id
                 let watch = l.id.replace("-watchContainer", "");
                 // Get selected storage file related to watch
-                msg = document.getElementById(`storageList-${watch}`).value;
+                let el = document.getElementById(
+                  `storageList-${watch}`,
+                ) as HTMLSelectElement;
+                msg = el.value;
                 // Emit command for each watch
-                emitCommand(e.target.value, watch, msg);
+                emitCommand(btn.value, watch, msg);
               });
               return;
             } else {
               // Send the name of the selected file
-              msg = document.getElementById(`storageList-${device}`)?.value;
+              let el = document.getElementById(
+                `storageList-${device}`,
+              ) as HTMLSelectElement;
+              msg = el.value;
             }
           }
           // @ts-ignore 'value' should exist on button
-          emitCommand(e.target.value, device, msg);
+          emitCommand(btn.value, device, msg);
         }
       });
       selElement.appendChild(newButton);
@@ -286,7 +293,7 @@ let addButtons = function (
 // Create a watchContainer for each watch
 let addWatch = function (id: string, deviceId: string) {
   console.log("adding: ", id, deviceId);
-  let selElement = document.getElementById(id);
+  let selElement = document.getElementById(id)!;
   let watchContainer = document.createElement("div");
   watchContainer.className = "watchContainer";
   watchContainer.id = `${deviceId}-watchContainer`;
@@ -312,22 +319,22 @@ let addWatch = function (id: string, deviceId: string) {
   // Add storage dropdown
   let newStorage = document.createElement("select");
   newStorage.id = `storageList-${deviceId}`;
-  newStorage.style = `width: 200px;`;
-  document.getElementById(`${deviceId}-storage`).appendChild(newStorage);
+  newStorage.style.width = `200px;`;
+  document.getElementById(`${deviceId}-storage`)!.appendChild(newStorage);
 };
 
 // TODO: combine with single update function
 let updateWatch = function (data) {
   console.log(data);
-  document.getElementById(`${data.DeviceID}-${"watchName"}`).textContent =
+  document.getElementById(`${data.DeviceID}-${"watchName"}`)!.textContent =
     data.watchName;
-  document.getElementById(`${data.DeviceID}-${"device"}`).textContent =
+  document.getElementById(`${data.DeviceID}-${"device"}`)!.textContent =
     data.DeviceID;
-  document.getElementById(`${data.DeviceID}-${"progress"}`).textContent =
+  document.getElementById(`${data.DeviceID}-${"progress"}`)!.textContent =
     data.Progress;
-  document.getElementById(`${data.DeviceID}-${"state"}`).textContent =
+  document.getElementById(`${data.DeviceID}-${"state"}`)!.textContent =
     data.state;
-  document.getElementById(`${data.DeviceID}-${"timeSync"}`).textContent =
+  document.getElementById(`${data.DeviceID}-${"timeSync"}`)!.textContent =
     data.TimeSyncAccuracy;
 };
 
