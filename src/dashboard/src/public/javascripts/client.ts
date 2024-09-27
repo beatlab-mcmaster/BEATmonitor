@@ -4,7 +4,6 @@
  * and initializes and handles UI functions. */
 
 import { io } from "../../../node_modules/socket.io/client-dist/socket.io.esm.min.js";
-//import { addButtons, addWatch, updateWatch } from "./interface.js";  // TODO: interface.ts is included in this script -- scope of socket??
 
 // Message handling
 const socket = io();
@@ -23,25 +22,26 @@ socket.on("connect_error", (err) => {
   console.log(err.context);
 });
 
-socket.on("clearAll", (data) => {
+socket.on("clearAll", () => {
   // Clear watchList if reconnecting
-  document.getElementById("watchList").innerHTML =
-    "<h2>Bangle.js watch list</h2>";
+  let el = document.getElementById("watchList");
+  el
+    ? (el.innerHTML = "<h2>Bangle.js watch list</h2>")
+    : console.log("clearAll: watchlist is null");
 });
 
-socket.on("info", (data) => {
+socket.on("info", (data: object) => {
   // Info messages from server
-  console.log(data.msg);
+  console.log(data);
 });
 
-socket.on("watch", (data) => {
+socket.on("watch", (data: object) => {
   // Watch messages from server
   console.log(data);
 });
 
 // Received when a watchDevice instance is created
 socket.on("watchInfoAll", (data) => {
-  console.log(data);
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
     // Update existing watch
     updateWatch(data);
@@ -81,6 +81,14 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "state":
         updateText(`${data.DeviceID}-${data.component}`, data.value);
+        // states:  Waiting / Recording / Sending / Unknown
+        if (data.value == "Recording") {
+          updateIcon(`${data.DeviceID}-tState`, icons.stateRecording);
+        } else if (data.value == "Waiting") {
+          updateIcon(`${data.DeviceID}-tState`, icons.stateWaiting);
+        } else {
+          updateIcon(`${data.DeviceID}-tState`, icons.stateUnknown);
+        }
         break;
       case "timeSync":
         updateText(`${data.DeviceID}-${data.component}`, data.value);
@@ -152,7 +160,7 @@ const icons = {
     img: "/images/question-circle-svgrepo-com.svg",
     alt: "Unknown state",
   },
-  statewaiting: {
+  stateWaiting: {
     img: "/images/waiting-arrow-svgrepo-com.svg",
     alt: "Watch is waiting",
   },
@@ -204,7 +212,7 @@ let updateIcon = function (id: string, icon: object): void {
 // Text can be updated as watch parameters change
 let updateText = function (id: string, txt: string): void {
   let el = document.getElementById(id);
-  el?.textContent = txt;
+  el.textContent = txt;
 };
 
 // Object sent to server when buttons are clicked
@@ -249,9 +257,9 @@ let addButtons = function (
                 // Trim watch id
                 let watch = l.id.replace("-watchContainer", "");
                 // Get selected storage file related to watch
-                msg = document.getElementById(`storageList-${watch}`)?.value;
+                msg = document.getElementById(`storageList-${watch}`).value;
                 // Emit command for each watch
-                emitCommand(e.target?.value, watch, msg);
+                emitCommand(e.target.value, watch, msg);
               });
               return;
             } else {
@@ -334,3 +342,8 @@ let ctlButtons = {
 };
 
 addButtons("main-controls", ctlButtons, "all");
+
+// TODO: column headers
+// TODO: colapsible
+// TODO: explain symbols/offsets/...
+// TODO: center title/padding
