@@ -1,0 +1,251 @@
+/* https://html-color-codes.info/color-names/ */
+:root {
+  --main-bg-color: black;
+  --main-fg-color: white;
+  --secondary-bg-color: rgb(75, 75, 75);
+  --secondary-fg-color: white;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  background-color: var(--main-bg-color);
+  color: rgb(230, 230, 230);
+  font-family: Arial;
+}
+
+h2,
+h3 {
+  margin: 0px;
+}
+
+.ui-grid {
+  border: 0px solid bisque;
+}
+
+.ui-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 1fr 18fr 1fr;
+  grid-template-rows: 2fr 1fr 1fr 6fr 11fr 1fr;
+  gap: 0px 0px;
+  grid-template-areas:
+    "header header header"
+    "leftSide main-controls na"
+    "leftSide watch-list-title na"
+    "leftSide watchList na"
+    "leftSide watchList na"
+    /*"leftSide commands na"*/
+    "footer footer footer";
+  & > * {
+    border-left: 2px solid rgba(0, 0, 0, 0);
+    margin: 5px;
+  }
+  /* Add container hovering? */
+  /*& > :hover {*/
+  /*  border-left: 2px solid rgb(120, 120, 120);*/
+  /*}*/
+}
+
+.footer {
+  grid-area: footer;
+}
+
+.header {
+  grid-area: header;
+}
+
+.main-controls {
+  grid-area: main-controls;
+}
+
+.watch-list-title {
+  grid-area: watch-list-title;
+}
+
+.watch-list {
+  grid-area: watchList;
+  overflow-y: scroll;
+}
+
+.graph {
+  grid-area: graph;
+}
+
+.right-title {
+  grid-area: rightTitle;
+}
+
+.commands {
+  grid-area: commands;
+  overflow-y: scroll;
+}
+
+.info {
+  grid-area: info;
+  overflow-y: scroll;
+}
+
+.left-side {
+  grid-area: leftSide;
+}
+
+.side-link {
+  text-align: left;
+  background-color: rgb(53, 53, 53);
+  padding-left: 10px;
+  padding-right: 10px;
+  /*padding-top: 25px;*/
+  /*padding-bottom: 25px;*/
+}
+
+/* Watch list layout */
+
+.watchContainer {
+  display: grid;
+  grid-template-columns: 1fr 4fr 1fr 6fr 1fr 2fr 1fr 4fr 1fr 3fr 1fr 3fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 3px 3px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "tWatch watchName tDevice device tNearby nearby tConnected connected tState state tTimeSync timeSync"
+    "tStorage storage storage storage tProgress progress progress progress progress progress progress progress"
+    "buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons buttons";
+  margin: 20px;
+  padding: 5px;
+  background-color: rgb(37, 37, 37);
+  border: 2px solid black;
+  border-radius: 5px;
+  opacity: 60%;
+}
+
+.watchContainer:hover {
+  border: 2px solid red;
+}
+
+.watchContainer.watchHeader {
+  grid-template-columns: 1fr 4fr 1fr 6fr 1fr 2fr 1fr 4fr 1fr 3fr 1fr 3fr;
+  grid-template-rows: 1fr;
+  grid-template-areas: "tWatch tWatch tDevice tDevice tNearby tNearby tConnected tConnected tState tState tTimeSync tTimeSync";
+  background-color: darkslategray;
+  margin-bottom: 0px;
+}
+
+.tWatch {
+  grid-area: tWatch;
+}
+
+.watchName {
+  grid-area: watchName;
+}
+
+.tDevice {
+  grid-area: tDevice;
+}
+
+.device {
+  grid-area: device;
+}
+
+.tNearby {
+  grid-area: tNearby;
+}
+
+.nearby {
+  grid-area: nearby;
+}
+
+.tConnected {
+  grid-area: tConnected;
+}
+
+.connected {
+  grid-area: connected;
+}
+
+.tState {
+  grid-area: tState;
+}
+
+.state {
+  grid-area: state;
+}
+
+.tTimeSync {
+  grid-area: tTimeSync;
+}
+
+.timeSync {
+  grid-area: timeSync;
+}
+
+.tStorage {
+  grid-area: tStorage;
+}
+
+.storage {
+  grid-area: storage;
+}
+
+.tProgress {
+  grid-area: tProgress;
+}
+
+.progress {
+  grid-area: progress;
+}
+
+.buttons {
+  grid-area: buttons;
+  justify-self: center;
+  align-self: center;
+}
+
+.na {
+  grid-area: na;
+}
+
+button {
+  background-color: rgba(150, 150, 150, 0.5);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  margin-left: 10px;
+  opacity: 70%;
+}
+
+button:hover {
+  opacity: 100%;
+}
+
+[id$="recordStart"] {
+  background-color: rgb(18, 145, 17);
+  border-color: darkseagreen;
+}
+[id$="recordStop"] {
+  background-color: rgb(170, 0, 0);
+  border-color: darksalmon;
+}
+
+.textbox {
+  background: silver;
+  border-radius: 3px;
+  margin-left: 10px;
+}
+
+select {
+  background-color: darkgray;
+}
+
+.icon-sm {
+  width: 20px;
+}

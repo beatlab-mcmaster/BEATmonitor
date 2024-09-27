@@ -1,0 +1,39 @@
+{
+  "name": "monitor",
+  "version": "1.0.0",
+  "description": "Web dashboard to monitor bluetooth connected Bangle.js 2 watches",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "nodemon --inspect --enable-source-maps ./app/server.js --exec babel-node -e js",
+    "build:compile": "npx babel src --extensions .ts --out-dir ./ --source-maps",
+    "build:types": "npx tsc",
+    "build": "concurrently npm:build:*",
+    "watch:compile": "npx babel src --extensions .ts --out-dir ./ --source-maps --watch",
+    "watch:types": "npx tsc --watch",
+    "watch": "concurrently npm:watch:*",
+    "start": "node --enable-source-maps ./app/server.js --exec babel-node -e js"
+  },
+  "author": "Maya B. Flannery",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.24.8",
+    "@babel/core": "^7.25.2",
+    "@babel/node": "^7.25.0",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/preset-typescript": "^7.24.7",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.4",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@abandonware/noble": "^1.9.2-25",
+    "csv": "^6.3.10",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "socket.io": "^4.7.5",
+    "winston": "^3.14.2"
+  }
+}

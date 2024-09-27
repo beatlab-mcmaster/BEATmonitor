@@ -1,4 +1,9 @@
 **/.DS_Store
+Session.vim
 
 **/node_modules/*
 **/logs/*
+src/dashboard/app/*
+src/dashboard/public/javascripts/*
+**/watchData/watchList/*
+**/watchData/transferredData/*

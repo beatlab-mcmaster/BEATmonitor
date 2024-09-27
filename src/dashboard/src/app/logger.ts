@@ -1,10 +1,8 @@
-/** logger.js
+/** logger.ts
  * Author: Maya B. Flannery
- * Created: 2024-03-27
- * Description: Logging types are defined here. Basic usage only. A new log
- * file is created when server.js is started or restarted. All logs are
- * timestamped and stored in either regular 'info' log files, or 'error' log 
- * files. */
+ * Description: The logger creates standard logs for general information
+ * commands and erros. Each log is timestamped and stored in a dated log file.
+ * */
 
 import winston from "winston";
 const { transports, format, createLogger } = winston;
@@ -15,6 +13,7 @@ const date = new Date();
 const newdate = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
 const options = {
+  // General logging of server activity is stored in dated log files
   info: {
     level: "info",
     dirname: "logs/combined",
@@ -23,6 +22,7 @@ const options = {
     datePattern: "YYYY-MM-DD-HH",
     filename: `combined-${newdate}.log`,
   },
+  // Errors are stored in separate dated file
   error: {
     level: "error",
     dirname: "logs/error",
@@ -30,6 +30,7 @@ const options = {
     handleExceptions: true,
     filename: `error-${newdate}.log`,
   },
+  // Debug -- not currently used
   console: {
     level: "debug",
     json: false,
@@ -38,9 +39,10 @@ const options = {
   },
 };
 
-const logger = new createLogger({
+const logger = createLogger({
   format: combine(
     timestamp(),
+    // Log format:
     printf((info) => `${info.timestamp} - [${info.level}] - ${info.message}`),
   ),
   transports: [
