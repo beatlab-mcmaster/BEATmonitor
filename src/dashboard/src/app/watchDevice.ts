@@ -4,8 +4,11 @@
 
 import fs from "fs";
 import logger from "./logger.js";
-import { settings, join } from "./config.js";
+import { settings } from "./config.js";
 import EventEmitter from "node:events";
+import type { Peripheral } from "@abandonware/noble";
+
+export type info = { [key: string]: any };
 
 class WatchDevice extends EventEmitter {
   peripheralUpdated: boolean = false;
@@ -13,7 +16,7 @@ class WatchDevice extends EventEmitter {
   watchName: string; // as 'Wxxx'
   MACid: string;
   serialNumber: string;
-  peripheral: undefined | object;
+  peripheral: undefined | Peripheral;
   txCharacteristic: any;
   rxCharacteristic: any;
   nearbyTimeout; // clear nearby if device out of range
@@ -26,7 +29,7 @@ class WatchDevice extends EventEmitter {
   progressMsg: string = "";
 
   constructor(
-    peripheral: undefined | object = undefined,
+    peripheral: undefined | Peripheral = undefined,
     {
       deviceId = "Unknown",
       watchName = "Unknown",
@@ -52,7 +55,7 @@ class WatchDevice extends EventEmitter {
     return this.peripheralUpdated;
   }
 
-  setPeripheral(peripheral: object) {
+  setPeripheral(peripheral: Peripheral) {
     this.peripheral = peripheral;
     this.deviceId = peripheral.advertisement.localName;
     this.peripheralUpdated = true;
@@ -122,11 +125,12 @@ class WatchDevice extends EventEmitter {
       default:
         value = "Unknown";
     }
-    this.emit("watchInfoSingle", {
+    let info: info = {
       DeviceID: this.deviceId,
       component: component,
       value: value,
-    });
+    };
+    this.emit("watchInfoSingle", info);
   }
 
   // Set the time on watch: first, estimate the delay offset (time to transmit
@@ -257,7 +261,7 @@ class WatchDevice extends EventEmitter {
           //this._logging(`Writing '${command}'`);
           this._write(command);
         },
-        (data) => {
+        (data: string) => {
           this.storage = data.replace(/(\x01)|(\r\n)>/g, "").split(",");
           this.getInfoSingle("storage");
           this._disconnect();
@@ -387,6 +391,7 @@ class WatchDevice extends EventEmitter {
         break;
       case 2:
         this.state = "Sending"; // does not work (no debug yet)
+        break;
       default:
         this.state = "Unknown";
     }
@@ -466,67 +471,71 @@ class WatchDevice extends EventEmitter {
 
   _connect(openCallback, dataCallback) {
     this._logging(`Connecting...`);
-    try {
-      this.peripheral.connect((error) => {
-        if (error) {
-          this._logging("ERROR Connecting");
-          this.peripheral = undefined;
-          this.connected = false;
+    if (this.peripheral) {
+      try {
+        this.peripheral.connect((error) => {
+          if (error) {
+            this._logging("ERROR: Connecting to device");
+            this.peripheral = undefined;
+            this.connected = false;
+            this.getInfoSingle("connected");
+            return;
+          }
+          this.connected = true;
           this.getInfoSingle("connected");
-          return;
-        }
-        this.connected = true;
-        this.getInfoSingle("connected");
-        this.peripheral.discoverAllServicesAndCharacteristics(
-          (error, services, characteristics) => {
-            function findByUUID(list, uuid) {
-              for (var i = 0; i < list.length; i++)
-                if (list[i].uuid == uuid) return list[i];
-              return undefined;
-            }
+          this.peripheral.discoverAllServicesAndCharacteristics(
+            (error, services, characteristics) => {
+              function findByUUID(list, uuid) {
+                for (var i = 0; i < list.length; i++)
+                  if (list[i].uuid == uuid) return list[i];
+                return undefined;
+              }
 
-            var btUARTService = findByUUID(
-              services,
-              "6e400001b5a3f393e0a9e50e24dcca9e",
-            );
-            this.txCharacteristic = findByUUID(
-              characteristics,
-              "6e400002b5a3f393e0a9e50e24dcca9e",
-            );
-            this.rxCharacteristic = findByUUID(
-              characteristics,
-              "6e400003b5a3f393e0a9e50e24dcca9e",
-            );
-            if (
-              error ||
-              !btUARTService ||
-              !this.txCharacteristic ||
-              !this.rxCharacteristic
-            ) {
-              this._logging("ERROR getting services/characteristics");
-              this._logging("Service " + btUARTService);
-              this._logging("TX " + this.txCharacteristic);
-              this._logging("RX " + this.rxCharacteristic);
-              this.peripheral.disconnect();
-              this.txCharacteristic = undefined;
-              this.rxCharacteristic = undefined;
-              this.peripheral = undefined;
-              return;
-            }
-            this.rxCharacteristic.on("data", (data: any) => {
-              var s = "";
-              for (var i = 0; i < data.length; i++)
-                s += String.fromCharCode(data[i]);
-              //this._logging("rxC > " + s);
-              dataCallback(s);
-            });
-            this.rxCharacteristic.subscribe();
-            openCallback();
-          },
-        );
-      });
-    } catch (err) {
-      this._logging(err);
+              var btUARTService = findByUUID(
+                services,
+                "6e400001b5a3f393e0a9e50e24dcca9e",
+              );
+              this.txCharacteristic = findByUUID(
+                characteristics,
+                "6e400002b5a3f393e0a9e50e24dcca9e",
+              );
+              this.rxCharacteristic = findByUUID(
+                characteristics,
+                "6e400003b5a3f393e0a9e50e24dcca9e",
+              );
+              if (
+                error ||
+                !btUARTService ||
+                !this.txCharacteristic ||
+                !this.rxCharacteristic
+              ) {
+                this._logging("ERROR getting services/characteristics");
+                this._logging("Service " + btUARTService);
+                this._logging("TX " + this.txCharacteristic);
+                this._logging("RX " + this.rxCharacteristic);
+                this.peripheral.disconnect();
+                this.txCharacteristic = undefined;
+                this.rxCharacteristic = undefined;
+                this.peripheral = undefined;
+                return;
+              }
+              this.rxCharacteristic.on("data", (data: any) => {
+                var s = "";
+                for (var i = 0; i < data.length; i++)
+                  s += String.fromCharCode(data[i]);
+                //this._logging("rxC > " + s);
+                dataCallback(s);
+              });
+              this.rxCharacteristic.subscribe();
+              openCallback();
+            },
+          );
+        });
+      } catch (err) {
+        this._logging(err);
+      }
+    } else {
+      this._logging("No peripheral");
     }
   }
 
