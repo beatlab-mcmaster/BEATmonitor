@@ -483,7 +483,7 @@ class WatchDevice extends EventEmitter {
           }
           this.connected = true;
           this.getInfoSingle("connected");
-          this.peripheral.discoverAllServicesAndCharacteristics(
+          this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
               function findByUUID(list, uuid) {
                 for (var i = 0; i < list.length; i++)
@@ -513,7 +513,7 @@ class WatchDevice extends EventEmitter {
                 this._logging("Service " + btUARTService);
                 this._logging("TX " + this.txCharacteristic);
                 this._logging("RX " + this.rxCharacteristic);
-                this.peripheral.disconnect();
+                this.peripheral?.disconnect();
                 this.txCharacteristic = undefined;
                 this.rxCharacteristic = undefined;
                 this.peripheral = undefined;
@@ -555,7 +555,7 @@ class WatchDevice extends EventEmitter {
   _disconnect() {
     this._logging("Disconnecting");
     try {
-      this.peripheral.disconnect();
+      this.peripheral?.disconnect();
     } catch (err) {
       this._logging(err);
     }
