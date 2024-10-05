@@ -10,6 +10,10 @@ import type { Peripheral } from "@abandonware/noble";
 
 export type info = { [key: string]: any };
 
+/**
+ * The WatchDevice class tracks all relevant watch settings and contains functions
+ * to send and receive data from a watch
+ * */
 class WatchDevice extends EventEmitter {
   peripheralUpdated: boolean = false;
   deviceId: string; // as 'Bangle.js xxxx'
@@ -19,8 +23,8 @@ class WatchDevice extends EventEmitter {
   peripheral: undefined | Peripheral;
   txCharacteristic: any;
   rxCharacteristic: any;
-  nearbyTimeout; // clear nearby if device out of range
-  nearby: string = "na";
+  nearbyTimeout: ReturnType<typeof setTimeout>; // clear nearby if device out of range
+  nearby: number | string = "na";
   connected = false;
   state: string = "Unknown";
   storage: string[] = ["na"]; // list of storage files on device
@@ -100,7 +104,7 @@ class WatchDevice extends EventEmitter {
 
   // return a single parameter
   getInfoSingle(component: string) {
-    let value: boolean | string | string[] = "";
+    let value: number | boolean | string | string[] = "";
     switch (component) {
       case "storage":
         value = this.storage;
@@ -164,10 +168,10 @@ class WatchDevice extends EventEmitter {
         () => {
           // Get server time and send to watch
           timeStart = new Date();
-          let cmd = `setTime('${(timeStart.getTime() + offset) / 1000}');print(getTime());`;
-          let command = `\x03\x10if(1)${cmd}\n`;
-          //this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write(
+            `setTime('${(timeStart.getTime() + offset) / 1000}');print(getTime());`,
+            false,
+          );
         },
         (data: any) => {
           if (trial < nTrials) {
@@ -204,16 +208,15 @@ class WatchDevice extends EventEmitter {
             trial++;
             // Try writing time again with new offset
             timeStart = new Date();
-            let cmd = `setTime('${(timeStart.getTime() + offset) / 1000}');print(getTime());`;
-            let command = `\x03\x10if(1)${cmd}\n`;
-            //this._logging(`Writing '${command}'`);
-            this._write(command);
+            this._write(
+              `if(1)setTime('${(timeStart.getTime() + offset) / 1000}');print(getTime());`,
+              false,
+            );
           } else if (trial == nTrials) {
-            let command = `\x03\x10if(1)draw();print("Done");\n`;
             // save the estimated difference
             this.timeSyncAccuracy = trialData.difference.at(-1) ?? "Error";
             this.getInfoSingle("timeSync");
-            this._write(command);
+            this._write(`if(1)draw();print("Done");`, false);
             trial++;
           } else {
             this._disconnect();
@@ -221,23 +224,19 @@ class WatchDevice extends EventEmitter {
           }
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
   }
 
-  // The physical id is configured when loading the innocents app to the watch
-  //  as 'Wxxx' (stored as a json file on the watch)
+  // The physical id is configured when loading the watch app (from the Bangle.js App Loader)
   getPhysicalId() {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
-          // 'sendWatchId' is a part of innocents app, returns the watch id
-          let cmd = `sendWatchId();`;
-          let command = `\x03\x10if(1)${cmd}\n`;
-          this._logging(`Writing '${command}'`);
-          this._write(command);
+          // 'sendWatchId' is a part of watch app, returns the watch id
+          this._write(`sendWatchId();`);
         },
         (data: any) => {
           // Store as watchName
@@ -247,7 +246,7 @@ class WatchDevice extends EventEmitter {
           this._disconnect();
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
@@ -255,13 +254,10 @@ class WatchDevice extends EventEmitter {
 
   // Retrieve a list of all storage files on the watch
   getStorageInfo() {
-    let cmd = `sendStorage();`;
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
-          let command = `\x03\x10if(1)${cmd}\n`;
-          //this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write(`if(1)sendStorage();`);
         },
         (data: string) => {
           this.storage = data.replace(/(\x01)|(\r\n)>/g, "").split(",");
@@ -269,27 +265,25 @@ class WatchDevice extends EventEmitter {
           this._disconnect();
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
   }
 
-  // Initiate 'sendData()' on watch. The watch opens specified storage file
-  //  and sends data line by line for processing
+  /* Bluetooth send commands to watch, JS function run on watch
+   Initiate 'sendData()' on watch. The watch opens specified storage file
+    and sends data line by line for processing */
   getDataFile(fileName: string) {
-    let cmd = `sendData('${fileName}');`;
     let dataBuffer: string = ""; // data are sent in packets, required for parsing
     let recievedFile: string[] = []; // store clean lines of data
     let receivedFileName = Date.now().toString(); // Default filename
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
-          let command = `\x03\x10if(1)${cmd}\n`;
-          this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write(`if(1)sendData('${fileName}')`); // TODO: Why 'if(1)' -- no docs...
         },
-        (data) => {
+        (data: string) => {
           dataBuffer += data; // add packet to buffer
           let line: string[] = [];
           line = dataBuffer.split("\r\n"); // this is a full line
@@ -306,9 +300,8 @@ class WatchDevice extends EventEmitter {
               } else if (ln.includes(`{"File":`)) {
                 // Parse the filename
                 if (ln.includes("_W")) {
-                  // new naming convention
                   receivedFileName =
-                    "2024-" +
+                    "2024-" + // TODO: change hard code
                     (
                       ln
                         ?.match(/\"Name\":\"(..-..T..:..:.._...._W...)/)
@@ -317,17 +310,6 @@ class WatchDevice extends EventEmitter {
                       ?.replace(/:/g, "-")
                       ?.replace("T", "_time_") +
                     ".csv";
-                } else if (ln.includes(".csv")) {
-                  // old naming convention
-                  receivedFileName =
-                    "2024-" +
-                    (
-                      ln
-                        ?.match(/\"Name\":\"(..-..T..:..:.._....\.csv)/)
-                        ?.at(1) ?? "Error"
-                    )
-                      ?.replace(/:/g, "-")
-                      ?.replace("T", "_time_");
                 }
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
@@ -362,14 +344,14 @@ class WatchDevice extends EventEmitter {
           });
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
   }
 
   // If device is in range, set nearby for 10s
-  set setNearby(rssi) {
+  set setNearby(rssi: number) {
     this.nearby = rssi;
     this.setState = 0;
     clearTimeout(this.nearbyTimeout);
@@ -379,7 +361,7 @@ class WatchDevice extends EventEmitter {
       this.nearby = "na";
       this.setState = 10;
       this.getInfoSingle("nearby");
-    }, 10000);
+    }, settings.nearbyTimeout);
   }
 
   // state is set in watch's advertisement id
@@ -405,15 +387,13 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
-          let command = "\x03\x10startRecord();\n";
-          //this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write("startRecord();");
         },
         (data) => {
           this._disconnect();
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
@@ -424,15 +404,13 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
-          let command = "\x03\x10stopRecord();\n";
-          //this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write("stopRecord();");
         },
-        (data) => {
+        (data: string) => {
           this._disconnect();
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
@@ -441,25 +419,22 @@ class WatchDevice extends EventEmitter {
   // Manually send an event to watch
   // ** 'deleteStorage("all");' ** to delete all storage files
   //    'deleteStorage("fileName");' to delete specified file
-  sendEvent(msg) {
+  sendEvent(msg: string) {
     return new Promise<void>((resolve) => {
-      let connectionTimeout;
+      let connectionTimeout: ReturnType<typeof setTimeout>;
       this._connect(
         () => {
-          //let command = `\x03\x10logEvent(${msg});\n`;
-          let command = `\x03\x10${msg}\n`;
-          this._logging(`Writing '${command}'`);
-          this._write(command);
+          this._write(msg);
         },
-        (data) => {
+        (data: string) => {
           this._logging(data);
           clearTimeout(connectionTimeout); // No end of list is sent by watch, so just timeout
           connectionTimeout = setTimeout(() => {
             this._disconnect();
-          }, 1000);
+          }, 1000); // TODO: ?
           setTimeout(() => {
             resolve();
-          }, 300);
+          }, settings.delay);
         },
       );
     });
@@ -470,7 +445,6 @@ class WatchDevice extends EventEmitter {
   //    https://www.espruino.com/Auto+Data+Download
   // and
   //    https://www.espruino.com/Interfacing#node-js-javascript
-
   _connect(openCallback, dataCallback) {
     this._logging(`Connecting...`);
     if (this.peripheral) {
@@ -487,23 +461,22 @@ class WatchDevice extends EventEmitter {
           this.getInfoSingle("connected");
           this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
-              function findByUUID(list, uuid) {
+              function findByUUID(list: any, uuid: string) {
                 for (var i = 0; i < list.length; i++)
                   if (list[i].uuid == uuid) return list[i];
                 return undefined;
               }
-
               var btUARTService = findByUUID(
                 services,
-                "6e400001b5a3f393e0a9e50e24dcca9e",
+                settings.uuid.btUARTService, // BT protocol: see config.ts
               );
               this.txCharacteristic = findByUUID(
                 characteristics,
-                "6e400002b5a3f393e0a9e50e24dcca9e",
+                settings.uuid.txCharacteristic,
               );
               this.rxCharacteristic = findByUUID(
                 characteristics,
-                "6e400003b5a3f393e0a9e50e24dcca9e",
+                settings.uuid.rxCharacteristic,
               );
               if (
                 error ||
@@ -541,16 +514,27 @@ class WatchDevice extends EventEmitter {
     }
   }
 
-  _write(data: any) {
+  /** Formats command and sends to watch
+   * @param cmd - command string to send to watch
+   * @param log - option to supress writing to log file
+   * */
+  _write(cmd: string, log: boolean = true) {
+    /* \x03 -> Clear line (previous cmd that may be on device)
+     * \x10 -> Disable terminal echo (on device, which stops cmd from being
+     *   sent back to node) */
+    let data = `\x03\x10${cmd}\n`;
     if (!this.peripheral) throw new Error("Not connected");
     let writeAgain = () => {
       if (!data.length) return;
-      var d = data.substr(0, 20);
-      data = data.substr(20);
+      var d = data.substring(0, 20);
+      data = data.substring(20);
       var buf = Buffer.alloc(d.length);
       for (var i = 0; i < buf.length; i++) buf.writeUInt8(d.charCodeAt(i), i);
       this.txCharacteristic.write(buf, false, writeAgain);
     };
+    if (log) {
+      this._logging(`Writing '${cmd}'`);
+    }
     writeAgain();
   }
 
@@ -567,9 +551,10 @@ class WatchDevice extends EventEmitter {
 
   // Timestamp logs
   _logging(msg: any) {
-    // console.log(`[${t.toLocaleString()}] > DEVICE: '${this.deviceId}' ${msg}`);
     logger.log("info", `DEVICE: '${this.deviceId}' ${msg}`);
   }
 }
 
 export { WatchDevice };
+
+// TODO: TS style function definitions
