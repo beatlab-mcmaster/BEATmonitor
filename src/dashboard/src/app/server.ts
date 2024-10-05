@@ -84,11 +84,11 @@ noble.on("discover", async function (dev) {
   // We are only interested in Bangle.js devices
   if (nearbyDevice.startsWith("Bangle.js")) {
     if (knownWatches.has(nearbyDevice)) {
+      // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
         logger.log("info", `NOBLE: Updating existing watch '${nearbyDevice}'`);
         knownWatches.get(nearbyDevice).setPeripheral(dev);
       } else {
-        // logger.log("info", `NOBLE: ${nearbyDevice} is up to date`);
         knownWatches.get(nearbyDevice).setNearby = dev.rssi;
         if (dev.advertisement.manufacturerData) {
           let deviceState = JSON.parse(
@@ -100,14 +100,14 @@ noble.on("discover", async function (dev) {
         }
       }
     } else {
-      // Update that this device is new
+      // Create a new watch
       logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
       knownWatches.set(nearbyDevice, new WatchDevice(dev));
     }
   }
 });
 
-// Handle browser messages
+// Handle browser messages (from clients)
 io.on("connection", (socket: Socket) => {
   logger.log("info", "Socket connected");
   socket.emit("clearAll", "clear");
@@ -121,11 +121,13 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("btn-click", (data) => {
+    // Handle button presses sent from client
     logger.log(
       "info",
       `Button click: ${data.cmd} on device: ${data.device} [msg: ${data.msg}]`,
     );
     if (data.device == "all") {
+      // Send command to all watches
       knownWatches.forEach((e) => {
         switch (data.cmd) {
           case "recordStart":
@@ -153,6 +155,7 @@ io.on("connection", (socket: Socket) => {
         }
       });
     } else {
+      // Send command to single watch
       switch (data.cmd) {
         case "getName":
           knownWatches.get(data.device).getPhysicalId();
@@ -182,7 +185,7 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
-  // Forward watch messages
+  // Forward watch messages to client
   knownWatches.forEach((e) => {
     e.on("watchMessage", (data: info) => {
       console.log("Message from watch --> ", data);
@@ -208,16 +211,7 @@ io.engine.on("connection_error", (err) => {
   logger.log("error", err.context); // some additional error context
 });
 
-/** Example of TS documentation
- * this do...
- * @params
- * */
-let x = function (msg: string): void {
-  console.log(msg);
-};
-
-x(`> Module directory name:`);
-
 // TODO: Resume function -- search for timestamp
 // TODO: Events/low-level commant box
 // TODO: Timesync when finished recording
+// TODO: Remove innocents language
