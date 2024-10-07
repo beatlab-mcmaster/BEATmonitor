@@ -1,10 +1,8 @@
+<!-- NOTE: DASHBOARD README -->
+
 # Record cardiac activity with Bangle.js 2 smartwatch
 
-## Main publication
-
-[link](TODO)
-
-### Authors
+## Authors
 
 Maya B. Flannery, Lauren Fink
 
@@ -45,7 +43,7 @@ In the same directory (`<project root>/src/dashboard/`), run:
 npm run build
 ```
 
-Then run
+Then run:
 
 ```bash
 npm run test
@@ -59,9 +57,53 @@ With the server started, open a web browser and go to
 ## Usage
 
 If the server has successfully started, you should see a page that looks
-like this: [TODO: update img]
+like this:
 
 ![The Bangle.js 2 application dashboard](res/images/dashboard.png)
+
+### Dashboard sections/indicators
+
+![The Bangle.js 2 application dashboard](res/images/watchContainer.png)
+
+1. Watch name: this name is set when installing the BEATmonitor watch
+   app (see: [instructions](src/bangle/README.md)) and can be used to identify
+   participants.
+2. Watch device: this name is set by Bangle.js and is advertised by the
+   device's Bluetooth radio.
+3. Bluetooth connection: the Bluetooth icon is highlighted when a watch is
+   detected nearby; the signal strength is shown: large negative numbers are
+   lower strength than numbers near 0.
+4. Connection icon: red when disconnected, green when connected; the dashboard
+   application can only connect to ~7 devices at once; connections to a watch
+   are only made when sending start/stop commands, synchronizing, or
+   transferring files.
+5. Watch action status: 'Unknown' - the watch may not be nearby; 'Waiting' -
+   the watch is ready to record, synchronize, or transfer files; 'Recording' -
+   the watch is recording and will not respond to commands other than 'Stop
+   Rec' (item 14).
+6. Synchronization status: (watch) device clocks will often slightly drift
+   over time. Before recording, it is recommended to run 'Sync Time' (item
+   12), which will set the time of each watch to that of the computer running
+   the dashboard. The estimated offset (see additional notes) in ms is shown
+   here.
+7. Storage files: recorded data are stored as files directly on the watch. To
+   retrieve the storage list, click 'Get Storage' (item 10). To download a file,
+   select the desired file from the list, then click 'Get File' (item 11).
+   Downloaded files are saved in `/src/dashboard/watchData/transferredData/`.
+8. Information bar: information about the watch device and file transfers
+   is shown here.
+9. 'Get Name': searches the watch for its name (see item 1).
+10. 'Get Storage': searches the watch for recorded data files.
+11. 'Get File': transfers the selected file in the Storage file list (item 7)
+    to the dashboard computer.
+12. 'Sync Time': performs a time setting function to set the watch device
+    clock to the dashboard computer clock.
+13. 'Start Rec': creates a new record file on the watch and begins writing
+    data.
+14. 'Stop Rec': stops writing to a record file.
+15. 'Send Cmd': send a specific function (written in item 16) to a device.
+16. Command text box: a specific function can be written here and sent with
+    'Send Cmd' (item 15).
 
 ### 1. Setup location
 
@@ -71,17 +113,7 @@ meters) and can be affected by objects/walls, so watches will vary in
 connection strength. It is best top position the host computer in the
 same room and centrally within 50 meters of all watches.
 
-### 2. Search for watches
-
-When first opening the dashboard, the Bluetooth radio is turned off and
-not searching for devices.
-
-- Click the **Search for watches** toggle to search for nearby
-  Bangle.js 2 watches.
-
-When a new watch is found, it will be added to the list of watches.
-
-### 3. Synchronize watches
+### 2. Synchronize watches
 
 To ensure that the time stamps for multiple watches are accurate, the
 synchronization function should be run before recording.
@@ -96,14 +128,15 @@ time to set the time on the watch (Note: this is an estimate since the
 time can only be set via Bluetooth; time should be accurate to within
 0--40 ms).
 
-### 4. Attach watches to participants
+### 3. Attach watches to participants
 
-Watches should be checked to ensure they are snug (but not too tight)
-against participants' wrists. The watch face should not move or slide
-around with participants' arm movements (this affects the quality of the
-PPG recording as the sensor is very sensitive to motion artifacts).
+Attach the Bangle.js 2 watch snugly to the individual's wrist. Ideally, the
+watch should not be too tight; but to minimize motion artifacts in the data
+(which are low-quality and difficult to analyse), it is important that the
+watch (i.e., the PPG sensor) does not move easily when the individual moves
+their arm or body.
 
-### 5. Start recording
+### 4. Start recording
 
 To start recording:
 
@@ -122,7 +155,7 @@ will be added to the file approximately once every 40 ms until the watch
 battery runs out, the storage capacity is reached, or **STOP Recording**
 is clicked. Samples will not be written if the watch is removed.
 
-### 6. Stop recording
+### 5. Stop recording
 
 To stop recording:
 
@@ -135,7 +168,7 @@ To stop recording:
 When the watch has stopped recording, the **State** box for that watch
 will return to normal color and display **'Waiting'**.
 
-### 7. Search for recordings
+### 6. Search for recordings
 
 To find previous recordings on the watches:
 
@@ -148,7 +181,7 @@ To find previous recordings on the watches:
 Files that are found will be displayed in the dropdown list for each
 watch in the list.
 
-### 8. Transfer recordings
+### 7. Transfer recordings
 
 The Bluetooth technology on the watches is 'low energy', which is
 optimal for battery life, but leads to relatively slow data transfer
@@ -164,7 +197,7 @@ To transfer a file:
 The transfer progress will be displayed in the **Progress** box and will
 change to **'[INFO] Reached EOF'** when completed.
 
-### 9. Delete stored recordings
+### 8. Delete stored recordings
 
 [TODO: update] The current method for deleting files on the watch is to
 manually send the command from the dashboard with the **'Event
@@ -191,7 +224,7 @@ message'** field:
 
 ## Troubleshooting
 
-[TODO: need feedback]
+Create an [issue](https://github.com/beatlab-mcmaster/BEATmonitor/issues).
 
 ## Resources
 
