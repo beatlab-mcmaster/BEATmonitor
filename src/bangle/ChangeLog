@@ -2,4 +2,4 @@
 0.02: Modified -- march 5th pilot
 0.03: Change timestamps to minimize cumulative error
 0.031: Timestamps updated to write time from start of record
-0.04: Application updated for general relase
+0.04: Application updated for general relase; renamed to BEATmonitor
