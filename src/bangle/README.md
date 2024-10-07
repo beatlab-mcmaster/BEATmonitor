@@ -123,7 +123,7 @@ To start recording on the watch manually:
 1. Press the right side button once, then
 2. Touch the box with the word 'WAITING' on the watch face
 
-![The BEATmonitor watch face (Recording).](res/images/watch-face.png)
+![The BEATmonitor watch face (Recording).](/res/images/watch-face.png)
 
 The box will change to 'RECORDING' and the number of collected samples will
 be updated once per minute.
@@ -180,6 +180,10 @@ All data recorded by the watch are stored in a text file with four sections:
 3. Individual PPG samples are recorded in comma separated value (csv) format,
    for example:
 
+   > [!NOTE]
+   >
+   > For more information on processing these data, see the (TODO: PPG analysis tutorial)
+
    | timestamp | heartRate | confidence | PPGraw | PPGfilter |
    | --------- | --------- | ---------- | ------ | --------- |
    | 14611     | 890       | 29         | 6206   | -1792     |
@@ -192,15 +196,11 @@ All data recorded by the watch are stored in a text file with four sections:
    | 14903     | 890       | 29         | 6262   | 9728      |
    | ...       | ...       | ...        | ...    | ...       |
 
-   - `timestamp`: the number of ms from the `Record.UNIXTimeStamp` above
+   - `timestamp`: the number of ms from the `Record.UNIXTimeStamp` above (section 2)
    - `heartRate`: the heart rate value calculated by the internal Bangle.js algorithm
    - `confidence`: the confidence in the heart rate reported by the Bangle.js algorithm
    - `PPGraw`: the raw PPG sensor reading for the sample
    - `PPFfilter`: the filtered (by Bangle.js algorithm) PPG value
-
-   > [!NOTE]
-   >
-   > For more information on processing these data, see the (TODO: PPG analysis tutorial)
 
 4. Provided the recording was stopped either manually or via the remote
    dashboard, the last line of the file contains an object with the end time,

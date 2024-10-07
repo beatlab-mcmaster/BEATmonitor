@@ -59,14 +59,14 @@ With the server started, open a web browser and go to
 If the server has successfully started, you should see a page that looks
 like this:
 
-![The Bangle.js 2 application dashboard](res/images/dashboard.png)
+![The Bangle.js 2 application dashboard](/res/images/dashboard.png)
 
 ### Dashboard sections/indicators
 
-![The Bangle.js 2 application dashboard](res/images/watchContainer.png)
+![The Bangle.js 2 application dashboard](/res/images/watchContainer.png)
 
 1. Watch name: this name is set when installing the BEATmonitor watch
-   app (see: [instructions](src/bangle/README.md)) and can be used to identify
+   app (see: [instructions](/src/bangle/README.md)) and can be used to identify
    participants.
 2. Watch device: this name is set by Bangle.js and is advertised by the
    device's Bluetooth radio.
