@@ -1,4 +1,4 @@
-// Innocents app -- v0.31
+// BEATmonitor -- v0.04
 // Load storage module
 const storage = require("Storage");
 
@@ -59,7 +59,7 @@ let drawTouch = {
   y2: 135,
 };
 
-// Actually draw the watch face
+// Draw the watch face
 let draw = function () {
   g.clear();
   g.setColor(0, 0, 0);
@@ -108,9 +108,7 @@ let draw = function () {
 };
 
 // Respond to touch events...
-// TODO: debounce
 Bangle.on("touch", (button, xy) => {
-  //console.log("Touch registered: ", xy);
   if (
     xy.x > drawTouch.x1 &&
     xy.x < drawTouch.x2 &&
@@ -125,7 +123,6 @@ Bangle.on("touch", (button, xy) => {
 let nPress = 0;
 setWatch(
   function () {
-    //console.log("Side button pressed");
     nPress++;
     if (nPress > 5) {
       stopRecord();
@@ -309,7 +306,6 @@ let getHR = function (hrm) {
         ].join(",");
         // Write to file
         data.write(obs + "\n");
-        //console.log(obs);  // debug
         samplesCollected++;
         prevWriteTimestamp = now;
       }
