@@ -240,7 +240,11 @@ class WatchDevice extends EventEmitter {
         },
         (data: any) => {
           // Store as watchName
-          this.watchName = data.match(/W.../);
+          if (data.startsWith("[INFO]")) {
+            this.watchName = "N/A";
+          } else {
+            this.watchName = data;
+          }
           this._logging(`got id: ${this.watchName}`);
           this.getInfoSingle("watchName");
           this._disconnect();
