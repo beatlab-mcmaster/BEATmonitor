@@ -1,8 +1,10 @@
-// BEATmonitor -- v0.04
+// BEATmonitor -- v0.05
 // Load storage module
 const storage = require("Storage");
 
 // Get device information
+const infoProgram = "BEATmonitor";
+const infoVersion = "v0.05";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 var infoPhysicalID = (function () {
@@ -54,7 +56,7 @@ let getMetaData = function (state) {
 let drawTimeout;
 let drawTouch = {
   x1: 5,
-  y1: 60,
+  y1: 70,
   x2: 170,
   y2: 135,
 };
@@ -68,12 +70,20 @@ let draw = function () {
   g.drawString(
     `${Date(Date.now()).toLocalISOString().slice(11, 23)}`,
     drawTouch.x1 + 1,
-    drawTouch.y1 - 30,
+    drawTouch.y1 - 25,
+  );
+
+  g.setFont("12x20");
+  // Draw the program version
+  g.drawString(
+    `${infoProgram}-${infoVersion}`,
+    drawTouch.x1 - 3,
+    drawTouch.y1 - 45,
   );
 
   g.setFont("12x20");
   // Draw the physical device ID
-  g.drawString(`ID:\n${infoPhysicalID}`, drawTouch.x1 + 110, drawTouch.y1 + 30);
+  g.drawString(`ID:\n${infoPhysicalID}`, drawTouch.x1 + 110, drawTouch.y1 + 25);
 
   // This is the start button area
   g.drawRect(drawTouch.x1, drawTouch.y1, drawTouch.x2, drawTouch.y2);
@@ -85,7 +95,7 @@ let draw = function () {
   g.drawString(
     `Samples:\n${samplesCollected}`,
     drawTouch.x1 + 5,
-    drawTouch.y1 + 30,
+    drawTouch.y1 + 25,
   );
 
   // Draw serial number and MAC address
@@ -194,7 +204,7 @@ let sendStorage = function () {
 
 let sendWatchId = function () {
   if (state == "WAIT") {
-    print(`${infoPhysicalID}`);
+    print(`id=${infoPhysicalID}`);
   } else {
     print("[INFO] Watch is busy, cannot send ID");
   }
