@@ -249,7 +249,10 @@ let sendData = function (fileName) {
       if (d === undefined) {
         // Reached the end of the file
         td = Date.now();
-        d = "[INFO] Reached EOF ... Done [" + (td - ts) / 1000 + " s]";
+        d =
+          "[INFO] Reached EOF ... Done [" +
+          ((td - ts) / 1000).toFixed(2) +
+          " s]";
         clearInterval(progress); // stop sending progress
         clearInterval(sendData); // stop sending data
         state = "WAIT";
