@@ -136,6 +136,7 @@ setWatch(
     nPress++;
     if (nPress > 5) {
       stopRecord();
+      stopStreaming();
     } else if (nPress == 1) {
       setTimeout(() => {
         nPress = 0;
@@ -193,6 +194,52 @@ let stopRecord = function () {
   }
 };
 
+let startStreaming = function () {
+  if (state == "WAIT") {
+    state = "START_STREAM";
+    console.log("Starting stream");
+
+    // TODO: needed? - Get current watch info
+    // fileData = getFileData();
+    // metaData = getMetaData(state);
+    // startTimestamp = metaData.Record.UNIXTimeStamp;
+    // Create a file to store heart rate data
+    // data = storage.open(fileData.File.Name, "a");
+    // Start by writing watch info
+    // data.write(JSON.stringify(fileData) + "\n");
+    // data.write(JSON.stringify(metaData) + "\n");
+
+    // Turn on the heart rate sensor
+    Bangle.setHRMPower(1);
+    state = "STREAMING";
+    setNRF(3);
+    draw();
+  } else {
+    console.log("Not ready to record");
+  }
+};
+
+let stopStreaming = function () {
+  if ((state = "STREAMING")) {
+    state = "STOP_STREAM";
+    console.log("Stopping stream");
+
+    // TODO: not needed? - Write end data
+    //metaData = getMetaData(state);
+    //data.write(JSON.stringify(metaData));
+
+    // Reset record
+    // Turn off the heart rate sensor
+    Bangle.setHRMPower(0);
+    samplesCollected = 0;
+    state = "WAIT";
+    setNRF(0);
+    draw();
+  } else {
+    console.log("No stream to stop");
+  }
+};
+
 let sendStorage = function () {
   if (state == "WAIT") {
     let storageFiles = storage.list(/(_W...)|(\.csv)/);
@@ -204,7 +251,7 @@ let sendStorage = function () {
 
 let sendWatchId = function () {
   if (state == "WAIT") {
-    print(`id=${infoPhysicalID}`);
+    print(`${infoPhysicalID}`);
   } else {
     print("[INFO] Watch is busy, cannot send ID");
   }
@@ -230,7 +277,7 @@ let deleteStorage = function (files) {
     if (files === undefined) {
       print("[INFO] No files to delete are specified!");
     } else if (files == "all") {
-      let storageFiles = storage.list(/(_W...)|(\.csv)/);
+      let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
       storageFiles.forEach((e) => {
         print(`Deleting: ${e}`);
         storage.open(e.replace("\u0001", ""), "r").erase();
@@ -299,6 +346,7 @@ let setNRF = function (val) {
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
 let getHR = function (hrm) {
+  // TODO: Cleanup this code
   if (state == "RECORDING") {
     // Filter unlikely heart rates
     let now = Date.now();
@@ -322,6 +370,26 @@ let getHR = function (hrm) {
         samplesCollected++;
         prevWriteTimestamp = now;
       }
+    }
+  } else if (state == "STREAMING") {
+    let now = Date.now();
+    let diff = Math.round(now - prevWriteTimestamp);
+    if (diff > 35) {
+      var d = [
+        "T",
+        now.toFixed(),
+        "H",
+        hrm.bpm,
+        "C",
+        hrm.confidence,
+        "R",
+        hrm.raw,
+        // "Filter",
+        // hrm.filt,
+      ];
+      samplesCollected++;
+      Bluetooth.println(d.join(","));
+      prevWriteTimestamp = now;
     }
   }
 };
