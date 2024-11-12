@@ -16,6 +16,7 @@ import { settings, join } from "./config.js";
 
 // Mapping to track watches
 const knownWatches = new Map();
+const allowNewDevices = true; // TODO: temporary flag to avoid conflict with Bangle watches that are not used in the study
 
 // Create web server
 const app = express();
@@ -100,9 +101,11 @@ noble.on("discover", async function (dev) {
         }
       }
     } else {
-      // Create a new watch
-      logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
-      knownWatches.set(nearbyDevice, new WatchDevice(dev));
+      if (allowNewDevices) {
+        // Create a new watch
+        logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
+        knownWatches.set(nearbyDevice, new WatchDevice(dev));
+      }
     }
   }
 });
