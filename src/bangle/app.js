@@ -9,13 +9,12 @@ const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
 
-NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
+NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` }); // Change default BT advertisement
 
 var infoPhysicalID = (function () {
   try {
     return storage.readJSON("physicalID.json").PhysicalID;
   } catch (e) {
-    console.log(e);
     return "ERR!"; // Error if cannot read ID
   }
 })();
@@ -206,16 +205,6 @@ let startStreaming = function () {
     state = "START_STREAM";
     console.log("Starting stream");
 
-    // TODO: needed? - Get current watch info
-    // fileData = getFileData();
-    // metaData = getMetaData(state);
-    // startTimestamp = metaData.Record.UNIXTimeStamp;
-    // Create a file to store heart rate data
-    // data = storage.open(fileData.File.Name, "a");
-    // Start by writing watch info
-    // data.write(JSON.stringify(fileData) + "\n");
-    // data.write(JSON.stringify(metaData) + "\n");
-
     // Turn on the heart rate sensor
     Bangle.setHRMPower(1);
     state = "STREAMING";
@@ -231,11 +220,6 @@ let stopStreaming = function () {
     state = "STOP_STREAM";
     console.log("Stopping stream");
 
-    // TODO: not needed? - Write end data
-    //metaData = getMetaData(state);
-    //data.write(JSON.stringify(metaData));
-
-    // Reset record
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
     samplesCollected = 0;
@@ -274,7 +258,7 @@ let setWatchId = function (watchID) {
 // ----------------------- Storage management / transfer ----------------------
 let sendStorage = function () {
   if (state == "WAIT") {
-    let storageFiles = storage.list(/(_W...)|(\.csv)/);
+    let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
     print(storageFiles.join());
   } else {
     print("[INFO] Watch is busy, cannot send storage!");
@@ -357,35 +341,25 @@ let setNRF = function (val) {
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
 let getHR = function (hrm) {
-  // TODO: Cleanup this code
-  if (state == "RECORDING") {
-    // Filter unlikely heart rates
-    let now = Date.now();
-    // truncated unix timestamp
-    let diff = Math.round(now - prevWriteTimestamp);
-    if (diff > 35) {
-      // We want a minimum of 30ms between samples
-      if (hrm.bpm > 40 && hrm.bpm < 180) {
-        // Write diff from start of record to save space
-        let ts = Math.round(Date.now() - startTimestamp);
-        // Create row with unix time and hr data
-        var obs = [
-          ts,
-          Math.round(hrm.bpm * 10), // save decimal, div by 10 later
-          hrm.confidence,
-          hrm.raw,
-          hrm.filt,
-        ].join(",");
-        // Write to file
-        data.write(obs + "\n");
-        samplesCollected++;
-        prevWriteTimestamp = now;
-      }
-    }
-  } else if (state == "STREAMING") {
-    let now = Date.now();
-    let diff = Math.round(now - prevWriteTimestamp);
-    if (diff > 35) {
+  let now = Date.now();
+  let diff = Math.round(now - prevWriteTimestamp);
+
+  // We want a minimum of 35ms between samples; and filter unlikely heart rates
+  if (diff > 35 && hrm.bpm > 30 && hrm.bpm < 240) {
+    if (state == "RECORDING") {
+      // Write diff from start of record to save space
+      let ts = Math.round(Date.now() - startTimestamp);
+      // Create row with unix time and hr data
+      var obs = [
+        ts,
+        Math.round(hrm.bpm * 10), // save decimal, div by 10 later
+        hrm.confidence,
+        hrm.raw,
+        hrm.filt,
+      ].join(",");
+      // Write to file
+      data.write(obs + "\n");
+    } else if (state == "STREAMING") {
       var d = [
         "T",
         now.toFixed(),
@@ -398,10 +372,10 @@ let getHR = function (hrm) {
         // "Filter",
         // hrm.filt,
       ];
-      samplesCollected++;
       Bluetooth.println(d.join(","));
-      prevWriteTimestamp = now;
     }
+    samplesCollected++;
+    prevWriteTimestamp = now;
   }
 };
 
