@@ -420,6 +420,46 @@ class WatchDevice extends EventEmitter {
     });
   }
 
+  // Call 'startStream()' on watch
+  startStreaming() {
+    let dataBuffer: string = ""; // data are sent in packets, required for parsing
+    let receivedData: string[] = []; // store clean lines of data
+    return new Promise<void>((resolve) => {
+      this._connect(
+        () => {
+          this._write("startStreaming();");
+        },
+        (data: string) => {
+          dataBuffer += data; // add packet to buffer
+          let line: string[] = [];
+          line = dataBuffer.split("\r\n"); // this is a full line
+          dataBuffer = line.pop() ?? ""; // buffer now equals part of next line
+          line.forEach((e) => {
+            let ln: string = e.replace(/\r|>|/g, ""); // remove weird carriage returns
+            ln = ln.replace(/^\x1b?\[J/, ""); // and characters
+            if (ln.length != 0) {
+              this.progressMsg = ln; // display progress
+              this.getInfoSingle("progress");
+            }
+          });
+          setTimeout(() => {
+            resolve();
+          }, settings.delay);
+        },
+      );
+    });
+  }
+
+  // Call 'stopStream()' on watch
+  stopStreaming() {
+    return new Promise<void>((resolve) => {
+      this._write("stopStreaming();");
+      setTimeout(() => {
+        this._disconnect(); // TODO: FIX HERE!!!!
+      }, settings.delay);
+    });
+  }
+
   // Manually send an event to watch
   // ** 'deleteStorage("all");' ** to delete all storage files
   //    'deleteStorage("fileName");' to delete specified file

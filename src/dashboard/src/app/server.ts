@@ -83,7 +83,10 @@ noble.on("discover", async function (dev) {
   if (typeof nearbyDevice == "undefined") return;
 
   // We are only interested in Bangle.js devices
-  if (nearbyDevice.startsWith("Bangle.js")) {
+  if (
+    nearbyDevice.startsWith("Bangle.js") ||
+    nearbyDevice.startsWith("BEATLab")
+  ) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
@@ -168,6 +171,12 @@ io.on("connection", (socket: Socket) => {
           break;
         case "recordStop":
           knownWatches.get(data.device).stopRecording();
+          break;
+        case "streamStart":
+          knownWatches.get(data.device).startStreaming();
+          break;
+        case "streamStop":
+          knownWatches.get(data.device).stopStreaming();
           break;
         case "sync":
           knownWatches.get(data.device).setTime();
