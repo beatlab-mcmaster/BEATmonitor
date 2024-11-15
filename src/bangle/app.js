@@ -9,7 +9,8 @@ const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
 
-NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` }); // Change default BT advertisement
+// Change default BT advertisement
+NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
 
 var infoPhysicalID = (function () {
   try {
@@ -333,10 +334,17 @@ let setNRF = function (val) {
   );
 };
 
+// ---------------------------- Vibration -------------------------------------
+let setVibrate = function (time, strength) {
+  Bangle.buzz(time, strength).then(() => {
+    print("[INFO] Vibration done");
+  });
+};
+
 // ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
-//Bangle.setPollInterval(40);
+Bangle.setPollInterval(40);
 
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
