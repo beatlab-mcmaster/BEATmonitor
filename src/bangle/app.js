@@ -7,6 +7,10 @@ const infoProgram = "BEATmonitor";
 const infoVersion = "v0.05";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
+const shortMAC = infoMAC.slice(-5).replace(":", "");
+
+NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
+
 var infoPhysicalID = (function () {
   try {
     return storage.readJSON("physicalID.json").PhysicalID;
@@ -26,7 +30,6 @@ var startTimestamp;
 let getFileData = function () {
   let dt = new Date(Date.now());
   let shortDate = `${dt.toISOString().slice(5, 19)}`;
-  let shortMAC = infoMAC.slice(-5).replace(":", "");
   let file = {
     File: {
       Name: shortDate + "_" + shortMAC + "_" + infoPhysicalID,
@@ -53,8 +56,9 @@ let getMetaData = function (state) {
   return data;
 };
 
+// ---------------------------- User Interface --------------------------------
 let drawTimeout;
-let drawTouch = {
+const drawTouch = {
   x1: 5,
   y1: 70,
   x2: 170,
@@ -135,18 +139,20 @@ setWatch(
   function () {
     nPress++;
     if (nPress > 5) {
+      // 5 presses required...
       stopRecord();
       stopStreaming();
     } else if (nPress == 1) {
       setTimeout(() => {
         nPress = 0;
-      }, 3000);
+      }, 3000); // ...within 3 seconds
     }
   },
   BTN,
   { edge: "rising", debounce: 50, repeat: true },
 );
 
+// ---------------------------- Record to watch -------------------------------
 // Button controls
 let startRecord = function () {
   if (state == "WAIT") {
@@ -194,6 +200,7 @@ let stopRecord = function () {
   }
 };
 
+// ---------------------------- Send data stream ------------------------------
 let startStreaming = function () {
   if (state == "WAIT") {
     state = "START_STREAM";
@@ -215,7 +222,7 @@ let startStreaming = function () {
     setNRF(3);
     draw();
   } else {
-    console.log("Not ready to record");
+    console.log("Not ready to stream");
   }
 };
 
@@ -240,15 +247,7 @@ let stopStreaming = function () {
   }
 };
 
-let sendStorage = function () {
-  if (state == "WAIT") {
-    let storageFiles = storage.list(/(_W...)|(\.csv)/);
-    print(storageFiles.join());
-  } else {
-    print("[INFO] Watch is busy, cannot send storage!");
-  }
-};
-
+// ---------------------------- Configure watch id ----------------------------
 let sendWatchId = function () {
   if (state == "WAIT") {
     print(`${infoPhysicalID}`);
@@ -269,6 +268,16 @@ let setWatchId = function (watchID) {
     infoPhysicalID = watchID;
   } else {
     print("[INFO] Watch is busy, cannot set ID!");
+  }
+};
+
+// ----------------------- Storage management / transfer ----------------------
+let sendStorage = function () {
+  if (state == "WAIT") {
+    let storageFiles = storage.list(/(_W...)|(\.csv)/);
+    print(storageFiles.join());
+  } else {
+    print("[INFO] Watch is busy, cannot send storage!");
   }
 };
 
@@ -329,6 +338,7 @@ let sendData = function (fileName) {
   }
 };
 
+// ---------------------------- Broadcast watch state -------------------------
 let setNRF = function (val) {
   NRF.setAdvertising(
     {},
@@ -339,6 +349,7 @@ let setNRF = function (val) {
   );
 };
 
+// ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
 //Bangle.setPollInterval(40);
@@ -393,6 +404,8 @@ let getHR = function (hrm) {
     }
   }
 };
+
+// ---------------------------- Initial function calls ------------------------
 // Listen for HRM values
 Bangle.on("HRM-raw", getHR);
 
