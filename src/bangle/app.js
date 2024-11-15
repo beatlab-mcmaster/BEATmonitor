@@ -12,7 +12,7 @@ const shortMAC = infoMAC.slice(-5).replace(":", "");
 // Change default BT advertisement
 NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
 
-var infoPhysicalID = (function () {
+let infoPhysicalID = (function () {
   try {
     return storage.readJSON("physicalID.json").PhysicalID;
   } catch (e) {
@@ -334,6 +334,17 @@ let setNRF = function (val) {
   );
 };
 
+// ---------------------------- Time sync / drift -----------------------------
+let syncTime = function (time) {
+  setTime(time);
+  Bluetooth.println(getTime());
+};
+
+let getDrift = function (serverTime) {
+  let watchTime = getTime();
+  Bluetooth.println(watchTime);
+};
+
 // ---------------------------- Vibration -------------------------------------
 let setVibrate = function (time, strength) {
   Bangle.buzz(time, strength).then(() => {
@@ -344,7 +355,7 @@ let setVibrate = function (time, strength) {
 // ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
-Bangle.setPollInterval(40);
+//Bangle.setPollInterval(40);
 
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
@@ -358,7 +369,7 @@ let getHR = function (hrm) {
       // Write diff from start of record to save space
       let ts = Math.round(Date.now() - startTimestamp);
       // Create row with unix time and hr data
-      var obs = [
+      let obs = [
         ts,
         Math.round(hrm.bpm * 10), // save decimal, div by 10 later
         hrm.confidence,
@@ -368,19 +379,24 @@ let getHR = function (hrm) {
       // Write to file
       data.write(obs + "\n");
     } else if (state == "STREAMING") {
-      var d = [
-        "T",
-        now.toFixed(),
-        "H",
-        hrm.bpm,
-        "C",
-        hrm.confidence,
-        "R",
-        hrm.raw,
-        // "Filter",
-        // hrm.filt,
-      ];
-      Bluetooth.println(d.join(","));
+      let dbuf = new ArrayBuffer(19); // n = record size
+      let d = new DataView(dbuf);
+
+      d.setFloat64(0, now);
+
+      d.setUint8(8, hrm.bpm); // Heart rate
+      d.setUint8(9, hrm.confidence); // Confidence
+      d.setInt16(10, hrm.raw); // Raw PPG
+      d.setInt16(12, hrm.filt); // Filter PPG
+
+      a = Bangle.getAccel();
+      d.setInt8(14, Math.round(a.x * 50));
+      d.setInt8(15, Math.round(a.y * 50));
+      d.setInt8(16, Math.round(a.z * 50));
+      d.setUint8(17, Math.round(a.diff * 100));
+      d.setUint8(18, Math.round(a.mag * 100));
+
+      Bluetooth.println(d.buffer);
     }
     samplesCollected++;
     prevWriteTimestamp = now;
