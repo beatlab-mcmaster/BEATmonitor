@@ -348,6 +348,7 @@ let ctlButtons = {
   sync: "Sync Time",
   recordStart: "Start Rec",
   recordStop: "Stop Rec",
+  getDrift: "Get Drift",
   sendCommand: "Send Cmd: ",
 };
 

@@ -29,6 +29,7 @@ class WatchDevice extends EventEmitter {
   state: string = "Unknown";
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
+  avgOffset: string | number = "Not set";
   timeSyncAccuracy: string | number = "Not synced!";
   progressMsg: string = "";
 
@@ -194,12 +195,11 @@ class WatchDevice extends EventEmitter {
             // on the last trial, use the average of last n trials
             if (trial == nTrials - 1) {
               // TODO: find a package with mean function???? otherwise this weird slice function
-              let avgOffset =
+              this.avgOffset =
                 trialData.offset
                   .slice(-settings.setTrialAverage)
                   .reduce((a, c) => a + c, 0) / settings.setTrialAverage;
-              this._logging(avgOffset);
-              offset = avgOffset;
+              offset = this.avgOffset;
             } else {
               // Set new offset to difference between recieved time and actual (end) time
               offset += diff;
@@ -209,7 +209,7 @@ class WatchDevice extends EventEmitter {
             // Try writing time again with new offset
             timeStart = new Date();
             this._write(
-              `if(1)setTime('${(timeStart.getTime() + offset) / 1000}');print(getTime());`,
+              `if(1)syncTime('${(timeStart.getTime() + offset) / 1000}');`,
               false,
             );
           } else if (trial == nTrials) {
@@ -220,6 +220,9 @@ class WatchDevice extends EventEmitter {
             trial++;
           } else {
             this._disconnect();
+            this._logging(
+              `AverageOffset: ${this.avgOffset}, EstimatedAccuracy: ${this.timeSyncAccuracy}`,
+            );
             this._logging(JSON.stringify(trialData));
           }
           setTimeout(() => {
@@ -228,6 +231,34 @@ class WatchDevice extends EventEmitter {
         },
       );
     });
+  }
+
+  // Estimate the current drift on the watch
+  getDriftEstimate() {
+    if (typeof this.avgOffset == "number") {
+      return new Promise<void>((resolve) => {
+        let serverTime: Date = new Date();
+        let offsetTime = (serverTime.getTime() + this.avgOffset) / 1000;
+        this._connect(
+          () => {
+            // 'sendWatchId' is a part of watch app, returns the watch id
+            this._write(`getDrift(${offsetTime});`);
+          },
+          (data: any) => {
+            // data = Number(data);
+            let diff = offsetTime - data;
+            this._logging(
+              `[Estimate Drift] server: ${serverTime}, avgOffset: ${this.avgOffset}, offsetTime: ${offsetTime}, data: ${data}, difference: ${diff}`,
+            );
+            //console.log(offsetTime - data);
+            this._disconnect();
+            setTimeout(() => {
+              resolve();
+            }, settings.delay);
+          },
+        );
+      });
+    }
   }
 
   // The physical id is configured when loading the watch app (from the Bangle.js App Loader)

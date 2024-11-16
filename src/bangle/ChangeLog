@@ -3,3 +3,4 @@
 0.03: Change timestamps to minimize cumulative error
 0.031: Timestamps updated to write time from start of record
 0.04: Application updated for general relase; renamed to BEATmonitor
+0.05: Add vibrations and streaming function

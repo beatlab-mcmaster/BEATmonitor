@@ -16,7 +16,7 @@ import { settings, join } from "./config.js";
 
 // Mapping to track watches
 const knownWatches = new Map();
-const allowNewDevices = true; // TODO: temporary flag to avoid conflict with Bangle watches that are not used in the study
+const allowNewDevices = false; // TODO: temporary flag to avoid conflict with Bangle watches that are not used in the study
 
 // Create web server
 const app = express();
@@ -145,6 +145,9 @@ io.on("connection", (socket: Socket) => {
           case "sync":
             e.setTime();
             break;
+          case "getDrift":
+            e.getDriftEstimate();
+            break;
           case "sendCommand":
             e.sendEvent(data.msg);
             break;
@@ -154,6 +157,7 @@ io.on("connection", (socket: Socket) => {
           case "getFiles":
             if (data.msg != undefined) {
               e.getDataFile(data.msg);
+              console.log("data:", data.msg);
             } else {
               console.log(`skipping device: ${data.device}`);
             }
@@ -165,6 +169,9 @@ io.on("connection", (socket: Socket) => {
       switch (data.cmd) {
         case "getName":
           knownWatches.get(data.device).getPhysicalId();
+          break;
+        case "getDrift":
+          knownWatches.get(data.device).getDriftEstimate();
           break;
         case "recordStart":
           knownWatches.get(data.device).startRecording();
