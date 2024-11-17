@@ -274,7 +274,7 @@ class WatchDevice extends EventEmitter {
           if (data.startsWith("[INFO]")) {
             this.watchName = "N/A";
           } else {
-            this.watchName = data;
+            this.watchName = data.replace(/\r\n>/, "");
           }
           this._logging(`got id: ${this.watchName}`);
           this.getInfoSingle("watchName");
@@ -295,7 +295,10 @@ class WatchDevice extends EventEmitter {
           this._write(`if(1)sendStorage();`);
         },
         (data: string) => {
-          this.storage = data.replace(/(\x01)|(\r\n)>/g, "").split(",");
+          this.storage = data
+            .replace(/(\x01)|(\r\n)|(\\r\\n)>/g, "")
+            .split(",");
+          console.log(this.storage);
           this.getInfoSingle("storage");
           this._disconnect();
           setTimeout(() => {
