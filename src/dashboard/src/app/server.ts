@@ -130,7 +130,7 @@ io.on("connection", (socket: Socket) => {
     // Handle button presses sent from client
     logger.log(
       "info",
-      `Button click: ${data.cmd} on device: ${data.device} [msg: ${data.msg}]`,
+      `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
     );
     if (data.device == "all") {
       // Send command to all watches
@@ -167,6 +167,10 @@ io.on("connection", (socket: Socket) => {
     } else {
       // Send command to single watch
       switch (data.cmd) {
+        case "reconnect":
+          knownWatches.get(data.device).updated = false;
+          logger.log("info", `Reconnecting: ${data.device}`);
+          break;
         case "getName":
           knownWatches.get(data.device).getPhysicalId();
           break;

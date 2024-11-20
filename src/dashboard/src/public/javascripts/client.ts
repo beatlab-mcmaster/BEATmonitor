@@ -342,6 +342,7 @@ let updateWatch = function (data) {
 
 // Create UI
 let ctlButtons = {
+  reconnect: "Reconnect",
   getName: "Get Name",
   getStorageList: "Get Storage",
   getFiles: "Get File",

@@ -24,6 +24,7 @@ class WatchDevice extends EventEmitter {
   txCharacteristic: any;
   rxCharacteristic: any;
   nearbyTimeout: ReturnType<typeof setTimeout>; // clear nearby if device out of range
+  driftTimeout: ReturnType<typeof setInterval>; // calculate drift at set interval
   nearby: number | string = "na";
   connected = false;
   state: string = "Unknown";
@@ -58,6 +59,10 @@ class WatchDevice extends EventEmitter {
 
   get updated() {
     return this.peripheralUpdated;
+  }
+
+  set updated(updated) {
+    this.peripheralUpdated = updated;
   }
 
   async setPeripheral(peripheral: Peripheral) {
@@ -219,6 +224,10 @@ class WatchDevice extends EventEmitter {
             this._write(`if(1)draw();print("Done");`, false);
             trial++;
           } else {
+            // this.driftTimeout = setInterval(
+            //   this.getDriftEstimate,
+            //   settings.driftPollingInterval,
+            // );
             this._disconnect();
             this._logging(
               `AverageOffset: ${this.avgOffset}, EstimatedAccuracy: ${this.timeSyncAccuracy}`,
@@ -274,7 +283,7 @@ class WatchDevice extends EventEmitter {
           if (data.startsWith("[INFO]")) {
             this.watchName = "N/A";
           } else {
-            this.watchName = data.replace(/\r\n>/, "");
+            this.watchName = data.replace(/(\r\n>)|(>)/, "");
           }
           this._logging(`got id: ${this.watchName}`);
           this.getInfoSingle("watchName");
@@ -296,7 +305,7 @@ class WatchDevice extends EventEmitter {
         },
         (data: string) => {
           this.storage = data
-            .replace(/(\x01)|(\r\n)|(\\r\\n)>/g, "")
+            .replace(/(\x01)|(\r\n)|(\\r\\n)|(>)/g, "")
             .split(",");
           console.log(this.storage);
           this.getInfoSingle("storage");
@@ -524,6 +533,10 @@ class WatchDevice extends EventEmitter {
   // and
   //    https://www.espruino.com/Interfacing#node-js-javascript
   _connect(openCallback, dataCallback) {
+    if (this.connected) {
+      this._logging("ERROR: Already connected!");
+      return;
+    }
     this._logging(`Connecting...`);
     if (this.peripheral) {
       try {
@@ -531,6 +544,7 @@ class WatchDevice extends EventEmitter {
           if (error) {
             this._logging("ERROR: Connecting to device");
             this.peripheral = undefined;
+            this.peripheralUpdated = false;
             this.connected = false;
             this.getInfoSingle("connected");
             return;

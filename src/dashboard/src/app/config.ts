@@ -32,6 +32,7 @@ const settings = {
   startOffset: 100,
   setTrialAverage: 5, // The final offset will be calcualed from the last n trials
   watchDelay: 5, // The estimated delay (ms) for the watch to process setTime and prepare response;
+  driftPollingInterval: 5000, // Attempt to get drift every 10 seconds
   // Verified above in testing  TODO: document test procedure
 
   /* Bangle.js 2 Bluetooth settings 
