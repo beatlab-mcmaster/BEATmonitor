@@ -5,140 +5,150 @@
     <title>BEATmonitor: Streaming</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.canvasjs.com/ga/canvasjs.min.js"></script>
     <link href="stylesheets/style.css" rel="stylesheet" type="text/css" />
     <link href="stylesheets/layout.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
     <div class="container">
-      <div
-        class="ui-grid header"
-        style="display: flex; justify-content: space-between; width: 100%"
-      >
-        <div>
-          <a target="_blank" href="https://beatlab.mcmaster.ca">
-            <img
-              src="/images/beat-lab-logo-white.svg"
-              style="height: 60px; margin: 5px"
-              alt="BEATLab: Brain/Body Entrainment Attention & Timing lab at McMaster University"
-              title="BEATLab: Brain/Body Entrainment Attention & Timing lab at McMaster University"
-          /></a>
-        </div>
-        <div>
-          <h1>BEATmonitor: Cardiac Live Stream</h1>
-        </div>
-        <div>
-          <a
-            target="_blank"
-            href="https://livelab.mcmaster.ca/mcmaster-institute-for-music-the-mind-mimm/"
-          >
-            <img
-              src="/images/mimm-logo-white.svg"
-              style="height: 60px; margin: 5px"
-              alt="McMaster Institute for Music & the Mind"
-              title="McMaster Institute for Music & the Mind"
-          /></a>
-          <a target="_blank" href="https://www.mcmaster.ca">
-            <img
-              src="/images/mac-logo-white.svg"
-              style="height: 60px; margin: 5px"
-              alt="McMaster University"
-              title="McMaster University"
-          /></a>
-        </div>
-      </div>
-      <div
-        class="ui-grid main-controls"
-        style="
-          display: flex;
-          justify-content: start;
-          flex-direction: row;
-          height: 100%;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: left;
-            flex-direction: row;
-            height: 100%;
-            align-items: center;
-            padding-right: 50px;
-          "
-        >
-          <div class="side-link">
-            <p style="vertical-align: middle; margin: 0px">
-              Help
-              <a
-                target="_blank"
-                href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
-                ><img
-                  src="/images/question-mark-button-svgrepo-com.svg"
-                  alt="Quick help"
-                  title="Quick help"
-                  style="
-                    margin: 5px;
-                    width: 30px;
-                    height: 30px;
-                    vertical-align: middle;
-                  "
-              /></a>
-            </p>
-          </div>
-          <div class="side-link">
-            <p style="vertical-align: middle; margin: 0px">
-              Docs
-              <a
-                target="_blank"
-                href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard"
-                ><img
-                  src="/images/book-closed-svgrepo-com.svg"
-                  alt="Documentation"
-                  title="Documentation"
-                  style="
-                    margin: 5px;
-                    width: 30px;
-                    height: 30px;
-                    vertical-align: middle;
-                  "
-              /></a>
-            </p>
-          </div>
-          <div class="side-link">
-            <p style="vertical-align: middle; margin: 0px">
-              GitHub
-              <a
-                target="_blank"
-                href="https://github.com/beatlab-mcmaster/BEATmonitor"
-                ><img
-                  src="/images/github-142-svgrepo-com.svg"
-                  alt="GitHub Repository"
-                  title="GitHub Repository"
-                  style="
-                    margin: 5px;
-                    width: 30px;
-                    height: 30px;
-                    vertical-align: middle;
-                  "
-              /></a>
-            </p>
-          </div>
-        </div>
-        <div id="main-controls"><h2>Controls</h2></div>
-      </div>
-      <div class="ui-grid left-side"></div>
+      <!-- <div -->
+      <!--   class="ui-grid header" -->
+      <!--   style="display: flex; justify-content: space-between; width: 100%" -->
+      <!-- > -->
+      <!--   <div> -->
+      <!--     <a target="_blank" href="https://beatlab.mcmaster.ca"> -->
+      <!--       <img -->
+      <!--         src="/images/beat-lab-logo-white.svg" -->
+      <!--         style="height: 60px; margin: 5px" -->
+      <!--         alt="BEATLab: Brain/Body Entrainment Attention & Timing lab at McMaster University" -->
+      <!--         title="BEATLab: Brain/Body Entrainment Attention & Timing lab at McMaster University" -->
+      <!--     /></a> -->
+      <!--   </div> -->
+      <!--   <div> -->
+      <!--     <h1>BEATmonitor: Cardiac Live Stream</h1> -->
+      <!--   </div> -->
+      <!--   <div> -->
+      <!--     <a -->
+      <!--       target="_blank" -->
+      <!--       href="https://livelab.mcmaster.ca/mcmaster-institute-for-music-the-mind-mimm/" -->
+      <!--     > -->
+      <!--       <img -->
+      <!--         src="/images/mimm-logo-white.svg" -->
+      <!--         style="height: 60px; margin: 5px" -->
+      <!--         alt="McMaster Institute for Music & the Mind" -->
+      <!--         title="McMaster Institute for Music & the Mind" -->
+      <!--     /></a> -->
+      <!--     <a target="_blank" href="https://www.mcmaster.ca"> -->
+      <!--       <img -->
+      <!--         src="/images/mac-logo-white.svg" -->
+      <!--         style="height: 60px; margin: 5px" -->
+      <!--         alt="McMaster University" -->
+      <!--         title="McMaster University" -->
+      <!--     /></a> -->
+      <!--   </div> -->
+      <!-- </div> -->
+      <!-- <div -->
+      <!--   class="ui-grid main-controls" -->
+      <!--   style=" -->
+      <!--     display: flex; -->
+      <!--     justify-content: start; -->
+      <!--     flex-direction: row; -->
+      <!--     height: 100%; -->
+      <!--   " -->
+      <!-- > -->
+      <!--   <div -->
+      <!--     style=" -->
+      <!--       display: flex; -->
+      <!--       justify-content: left; -->
+      <!--       flex-direction: row; -->
+      <!--       height: 100%; -->
+      <!--       align-items: center; -->
+      <!--       padding-right: 50px; -->
+      <!--     " -->
+      <!--   > -->
+      <!--     <div class="side-link"> -->
+      <!--       <p style="vertical-align: middle; margin: 0px"> -->
+      <!--         Help -->
+      <!--         <a -->
+      <!--           target="_blank" -->
+      <!--           href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard" -->
+      <!--           ><img -->
+      <!--             src="/images/question-mark-button-svgrepo-com.svg" -->
+      <!--             alt="Quick help" -->
+      <!--             title="Quick help" -->
+      <!--             style=" -->
+      <!--               margin: 5px; -->
+      <!--               width: 30px; -->
+      <!--               height: 30px; -->
+      <!--               vertical-align: middle; -->
+      <!--             " -->
+      <!--         /></a> -->
+      <!--       </p> -->
+      <!--     </div> -->
+      <!--     <div class="side-link"> -->
+      <!--       <p style="vertical-align: middle; margin: 0px"> -->
+      <!--         Docs -->
+      <!--         <a -->
+      <!--           target="_blank" -->
+      <!--           href="https://github.com/beatlab-mcmaster/BEATmonitor/src/dashboard" -->
+      <!--           ><img -->
+      <!--             src="/images/book-closed-svgrepo-com.svg" -->
+      <!--             alt="Documentation" -->
+      <!--             title="Documentation" -->
+      <!--             style=" -->
+      <!--               margin: 5px; -->
+      <!--               width: 30px; -->
+      <!--               height: 30px; -->
+      <!--               vertical-align: middle; -->
+      <!--             " -->
+      <!--         /></a> -->
+      <!--       </p> -->
+      <!--     </div> -->
+      <!--     <div class="side-link"> -->
+      <!--       <p style="vertical-align: middle; margin: 0px"> -->
+      <!--         GitHub -->
+      <!--         <a -->
+      <!--           target="_blank" -->
+      <!--           href="https://github.com/beatlab-mcmaster/BEATmonitor" -->
+      <!--           ><img -->
+      <!--             src="/images/github-142-svgrepo-com.svg" -->
+      <!--             alt="GitHub Repository" -->
+      <!--             title="GitHub Repository" -->
+      <!--             style=" -->
+      <!--               margin: 5px; -->
+      <!--               width: 30px; -->
+      <!--               height: 30px; -->
+      <!--               vertical-align: middle; -->
+      <!--             " -->
+      <!--         /></a> -->
+      <!--       </p> -->
+      <!--     </div> -->
+      <!--   </div> -->
+      <!--   <div id="main-controls"><h2>Controls</h2></div> -->
+      <!-- </div> -->
+      <!-- <div class="ui-grid left-side"></div> -->
       <div class="ui-grid watch-list-title" id="watchListTitle">
-        <h2>Bangle.js watch list</h2>
-        <div class="watchContainer watchHeader">
-          <div class="tWatch">Watch/Participant ID</div>
-          <div class="tDevice">Device Name</div>
-          <div class="tNearby">Bluetooth Signal</div>
-          <div class="tConnected">Connection Status</div>
-          <div class="tState">Watch Status</div>
-          <div class="tTimeSync">Synchronization Offset</div>
-        </div>
+        <!-- <h2>Bangle.js watch list</h2> -->
+        <!-- <div class="watchContainer watchHeader"> -->
+        <!--   <div class="tWatch">Watch/Participant ID</div> -->
+        <!--   <div class="tDevice">Device Name</div> -->
+        <!--   <div class="tNearby">Bluetooth Signal</div> -->
+        <!--   <div class="tConnected">Connection Status</div> -->
+        <!--   <div class="tState">Watch Status</div> -->
+        <!--   <div class="tTimeSync">Synchronization Offset</div> -->
+        <!-- </div> -->
+        <div
+          id="container"
+          style="
+            text-align: center;
+            height: 500px;
+            width: 100%;
+            background-color: black;
+          "
+        ></div>
       </div>
       <div class="ui-grid watch-list" id="watchList"></div>
-      <div class="ui-grid ui-center footer">BEATLab 2024</div>
+      <!-- <div class="ui-grid ui-center footer">BEATLab 2024</div> -->
     </div>
     <script type="module" src="/javascripts/client-streaming.js"></script>
   </body>
