@@ -481,8 +481,35 @@ class WatchDevice extends EventEmitter {
             let ln: string = e.replace(/\r|>|/g, ""); // remove weird carriage returns
             ln = ln.replace(/^\x1b?\[J/, ""); // and characters
             if (ln.length != 0) {
-              this.progressMsg = ln; // display progress
-              this.getInfoSingle("progress");
+              // TODO: Process binary data
+              //
+              let a = new Uint8Array(ln.split(",").map(Number));
+              let obs: object | string = ""; // TODO: type
+              if (a.byteLength == 19) {
+                let d = new DataView(a.buffer);
+                obs = {
+                  dt: d.getFloat64(0),
+                  hrmBpm: d.getUint8(8),
+                  hrmConf: d.getUint8(9),
+                  hrmRaw: d.getInt16(10),
+                  hrmFilt: d.getInt16(12),
+                  accX: d.getInt8(14),
+                  accY: d.getInt8(15),
+                  accZ: d.getInt8(16),
+                  accDiff: d.getUint8(17),
+                  accMag: d.getUint8(18),
+                };
+                this.progressMsg = `Streaming: ${obs.hrmBpm}`; // display progress
+                this.getInfoSingle("progress");
+
+                let info: info = {
+                  DeviceID: this.deviceId,
+                  component: "liveData",
+                  value: obs,
+                };
+                this.emit("watchInfoSingle", info);
+              }
+              // console.log(obs);
             }
           });
           setTimeout(() => {
