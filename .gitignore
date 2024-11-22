@@ -7,3 +7,4 @@ src/dashboard/app/*
 src/dashboard/public/javascripts/*
 **/watchData/watchList/*
 **/watchData/transferredData/*
+src/dashboard/watchData/2024-11-19_synaptic-rodeo-data.zip
