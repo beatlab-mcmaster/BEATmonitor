@@ -51,6 +51,8 @@ socket.on("watchInfoAll", (data) => {
   }
 });
 
+let sample = 0;
+
 // Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
@@ -113,7 +115,11 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "liveData":
         // console.log(data);
-        updateChart(data);
+        sample++;
+        if (sample % 20 == 0) {
+          sample = 0;
+          updateChart(data);
+        }
         break;
       default:
         let updateElement = document.getElementById(
@@ -375,12 +381,8 @@ var chart = new CanvasJS.Chart("container", {
     title: "Heart rate (bpm)",
     gridColor: "#1E1E1E",
     gridThickness: 1,
-    // minimum: 40,
-    // maximum: 180,
-  },
-  axisY2: {
-    // title: "Photoplethysmogram (PPG)",
-    title: "PPG",
+    minimum: 40,
+    maximum: 200,
   },
   axisX: {
     title: "Time",
@@ -389,17 +391,17 @@ var chart = new CanvasJS.Chart("container", {
       return " ";
     },
   },
-  toolTip: {
-    shared: "true",
-  },
-  legend: {
-    cursor: "pointer",
-  },
+  // toolTip: {
+  //   shared: "true",
+  // },
+  // legend: {
+  //   cursor: "pointer",
+  // },
   data: [],
 });
 
 var devices = [];
-var dataLength = 600; // number of dataPoints visible at any point
+var dataLength = 30; // number of dataPoints visible at any point
 
 var updateChart = function (data) {
   // If new device, add to chart
@@ -407,7 +409,7 @@ var updateChart = function (data) {
     devices[`${data.DeviceID}`].push({
       x: data.value.dt,
       y: data.value.hrmBpm,
-      y2: data.value.hrmRaw,
+      // y: data.value.hrmFilt,
     });
   } else {
     console.log(data);
@@ -415,13 +417,12 @@ var updateChart = function (data) {
     devices[`${data.DeviceID}`] = [
       {
         x: data.value.dt,
-        y: data.value.hrmRaw,
-        y2: data.value.hrmBpm,
+        // y: data.value.hrmFilt,
+        y: data.value.hrmBpm,
       },
     ];
     chart.options.data.push({
-      axisYindex: 0,
-      type: "spline",
+      type: "line",
       name: data.DeviceID,
       showInLegend: true,
       legendText: data.DeviceID,
