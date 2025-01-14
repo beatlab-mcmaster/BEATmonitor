@@ -16,6 +16,7 @@ import { settings, join } from "./config.js";
 
 // Mapping to track watches
 const knownWatches = new Map();
+const allowNewDevices = false; // TODO: temporary flag to avoid conflict with Bangle watches that are not used in the study
 
 // Create web server
 const app = express();
@@ -82,7 +83,10 @@ noble.on("discover", async function (dev) {
   if (typeof nearbyDevice == "undefined") return;
 
   // We are only interested in Bangle.js devices
-  if (nearbyDevice.startsWith("Bangle.js")) {
+  if (
+    nearbyDevice.startsWith("Bangle.js") ||
+    nearbyDevice.startsWith("BEATLab")
+  ) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
@@ -100,9 +104,11 @@ noble.on("discover", async function (dev) {
         }
       }
     } else {
-      // Create a new watch
-      logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
-      knownWatches.set(nearbyDevice, new WatchDevice(dev));
+      if (allowNewDevices) {
+        // Create a new watch
+        logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
+        knownWatches.set(nearbyDevice, new WatchDevice(dev));
+      }
     }
   }
 });
@@ -124,7 +130,7 @@ io.on("connection", (socket: Socket) => {
     // Handle button presses sent from client
     logger.log(
       "info",
-      `Button click: ${data.cmd} on device: ${data.device} [msg: ${data.msg}]`,
+      `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
     );
     if (data.device == "all") {
       // Send command to all watches
@@ -139,6 +145,9 @@ io.on("connection", (socket: Socket) => {
           case "sync":
             e.setTime();
             break;
+          case "getDrift":
+            e.getDriftEstimate();
+            break;
           case "sendCommand":
             e.sendEvent(data.msg);
             break;
@@ -148,6 +157,7 @@ io.on("connection", (socket: Socket) => {
           case "getFiles":
             if (data.msg != undefined) {
               e.getDataFile(data.msg);
+              console.log("data:", data.msg);
             } else {
               console.log(`skipping device: ${data.device}`);
             }
@@ -157,14 +167,27 @@ io.on("connection", (socket: Socket) => {
     } else {
       // Send command to single watch
       switch (data.cmd) {
+        case "reconnect":
+          knownWatches.get(data.device).updated = false;
+          logger.log("info", `Reconnecting: ${data.device}`);
+          break;
         case "getName":
           knownWatches.get(data.device).getPhysicalId();
+          break;
+        case "getDrift":
+          knownWatches.get(data.device).getDriftEstimate();
           break;
         case "recordStart":
           knownWatches.get(data.device).startRecording();
           break;
         case "recordStop":
           knownWatches.get(data.device).stopRecording();
+          break;
+        case "streamStart":
+          knownWatches.get(data.device).startStreaming();
+          break;
+        case "streamStop":
+          knownWatches.get(data.device).stopStreaming();
           break;
         case "sync":
           knownWatches.get(data.device).setTime();

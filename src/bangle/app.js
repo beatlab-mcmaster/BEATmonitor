@@ -1,15 +1,21 @@
-// BEATmonitor -- v0.04
+// BEATmonitor -- v0.05
 // Load storage module
 const storage = require("Storage");
 
 // Get device information
+const infoProgram = "BEATmonitor";
+const infoVersion = "v0.05";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
-var infoPhysicalID = (function () {
+const shortMAC = infoMAC.slice(-5).replace(":", "");
+
+// Change default BT advertisement
+NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
+
+let infoPhysicalID = (function () {
   try {
     return storage.readJSON("physicalID.json").PhysicalID;
   } catch (e) {
-    console.log(e);
     return "ERR!"; // Error if cannot read ID
   }
 })();
@@ -24,7 +30,6 @@ var startTimestamp;
 let getFileData = function () {
   let dt = new Date(Date.now());
   let shortDate = `${dt.toISOString().slice(5, 19)}`;
-  let shortMAC = infoMAC.slice(-5).replace(":", "");
   let file = {
     File: {
       Name: shortDate + "_" + shortMAC + "_" + infoPhysicalID,
@@ -51,10 +56,11 @@ let getMetaData = function (state) {
   return data;
 };
 
+// ---------------------------- User Interface --------------------------------
 let drawTimeout;
-let drawTouch = {
+const drawTouch = {
   x1: 5,
-  y1: 60,
+  y1: 70,
   x2: 170,
   y2: 135,
 };
@@ -68,12 +74,20 @@ let draw = function () {
   g.drawString(
     `${Date(Date.now()).toLocalISOString().slice(11, 23)}`,
     drawTouch.x1 + 1,
-    drawTouch.y1 - 30,
+    drawTouch.y1 - 25,
+  );
+
+  g.setFont("12x20");
+  // Draw the program version
+  g.drawString(
+    `${infoProgram}-${infoVersion}`,
+    drawTouch.x1 - 3,
+    drawTouch.y1 - 45,
   );
 
   g.setFont("12x20");
   // Draw the physical device ID
-  g.drawString(`ID:\n${infoPhysicalID}`, drawTouch.x1 + 110, drawTouch.y1 + 30);
+  g.drawString(`ID:\n${infoPhysicalID}`, drawTouch.x1 + 110, drawTouch.y1 + 25);
 
   // This is the start button area
   g.drawRect(drawTouch.x1, drawTouch.y1, drawTouch.x2, drawTouch.y2);
@@ -85,7 +99,7 @@ let draw = function () {
   g.drawString(
     `Samples:\n${samplesCollected}`,
     drawTouch.x1 + 5,
-    drawTouch.y1 + 30,
+    drawTouch.y1 + 25,
   );
 
   // Draw serial number and MAC address
@@ -125,17 +139,20 @@ setWatch(
   function () {
     nPress++;
     if (nPress > 5) {
+      // 5 presses required...
       stopRecord();
+      stopStreaming();
     } else if (nPress == 1) {
       setTimeout(() => {
         nPress = 0;
-      }, 3000);
+      }, 3000); // ...within 3 seconds
     }
   },
   BTN,
   { edge: "rising", debounce: 50, repeat: true },
 );
 
+// ---------------------------- Record to watch -------------------------------
 // Button controls
 let startRecord = function () {
   if (state == "WAIT") {
@@ -183,15 +200,39 @@ let stopRecord = function () {
   }
 };
 
-let sendStorage = function () {
+// ---------------------------- Send data stream ------------------------------
+let startStreaming = function () {
   if (state == "WAIT") {
-    let storageFiles = storage.list(/(_W...)|(\.csv)/);
-    print(storageFiles.join());
+    state = "START_STREAM";
+    console.log("Starting stream");
+
+    // Turn on the heart rate sensor
+    Bangle.setHRMPower(1);
+    state = "STREAMING";
+    setNRF(3);
+    draw();
   } else {
-    print("[INFO] Watch is busy, cannot send storage!");
+    console.log("Not ready to stream");
   }
 };
 
+let stopStreaming = function () {
+  if ((state = "STREAMING")) {
+    state = "STOP_STREAM";
+    console.log("Stopping stream");
+
+    // Turn off the heart rate sensor
+    Bangle.setHRMPower(0);
+    samplesCollected = 0;
+    state = "WAIT";
+    setNRF(0);
+    draw();
+  } else {
+    console.log("No stream to stop");
+  }
+};
+
+// ---------------------------- Configure watch id ----------------------------
 let sendWatchId = function () {
   if (state == "WAIT") {
     print(`${infoPhysicalID}`);
@@ -215,12 +256,22 @@ let setWatchId = function (watchID) {
   }
 };
 
+// ----------------------- Storage management / transfer ----------------------
+let sendStorage = function () {
+  if (state == "WAIT") {
+    let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
+    print(storageFiles.join());
+  } else {
+    print("[INFO] Watch is busy, cannot send storage!");
+  }
+};
+
 let deleteStorage = function (files) {
   if (state == "WAIT") {
     if (files === undefined) {
       print("[INFO] No files to delete are specified!");
     } else if (files == "all") {
-      let storageFiles = storage.list(/(_W...)|(\.csv)/);
+      let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
       storageFiles.forEach((e) => {
         print(`Deleting: ${e}`);
         storage.open(e.replace("\u0001", ""), "r").erase();
@@ -272,6 +323,7 @@ let sendData = function (fileName) {
   }
 };
 
+// ---------------------------- Broadcast watch state -------------------------
 let setNRF = function (val) {
   NRF.setAdvertising(
     {},
@@ -282,6 +334,25 @@ let setNRF = function (val) {
   );
 };
 
+// ---------------------------- Time sync / drift -----------------------------
+let syncTime = function (time) {
+  setTime(time);
+  Bluetooth.println(getTime());
+};
+
+let getDrift = function (serverTime) {
+  let watchTime = getTime();
+  Bluetooth.println(watchTime);
+};
+
+// ---------------------------- Vibration -------------------------------------
+let setVibrate = function (time, strength) {
+  Bangle.buzz(time, strength).then(() => {
+    print("[INFO] Vibration done");
+  });
+};
+
+// ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
 //Bangle.setPollInterval(40);
@@ -289,32 +360,50 @@ let setNRF = function (val) {
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
 let getHR = function (hrm) {
-  if (state == "RECORDING") {
-    // Filter unlikely heart rates
-    let now = Date.now();
-    // truncated unix timestamp
-    let diff = Math.round(now - prevWriteTimestamp);
-    if (diff > 35) {
-      // We want a minimum of 30ms between samples
-      if (hrm.bpm > 40 && hrm.bpm < 180) {
-        // Write diff from start of record to save space
-        let ts = Math.round(Date.now() - startTimestamp);
-        // Create row with unix time and hr data
-        var obs = [
-          ts,
-          Math.round(hrm.bpm * 10), // save decimal, div by 10 later
-          hrm.confidence,
-          hrm.raw,
-          hrm.filt,
-        ].join(",");
-        // Write to file
-        data.write(obs + "\n");
-        samplesCollected++;
-        prevWriteTimestamp = now;
-      }
+  let now = Date.now();
+  let diff = Math.round(now - prevWriteTimestamp);
+
+  // We want a minimum of 35ms between samples; and filter unlikely heart rates
+  if (diff > 35 && hrm.bpm > 30 && hrm.bpm < 240) {
+    if (state == "RECORDING") {
+      // Write diff from start of record to save space
+      let ts = Math.round(Date.now() - startTimestamp);
+      // Create row with unix time and hr data
+      let obs = [
+        ts,
+        Math.round(hrm.bpm * 10), // save decimal, div by 10 later
+        hrm.confidence,
+        hrm.raw,
+        hrm.filt,
+      ].join(",");
+      // Write to file
+      data.write(obs + "\n");
+    } else if (state == "STREAMING") {
+      let dbuf = new ArrayBuffer(19); // n = record size
+      let d = new DataView(dbuf);
+
+      d.setFloat64(0, now);
+
+      d.setUint8(8, hrm.bpm); // Heart rate
+      d.setUint8(9, hrm.confidence); // Confidence
+      d.setInt16(10, hrm.raw); // Raw PPG
+      d.setInt16(12, hrm.filt); // Filter PPG
+
+      a = Bangle.getAccel();
+      d.setInt8(14, Math.round(a.x * 50));
+      d.setInt8(15, Math.round(a.y * 50));
+      d.setInt8(16, Math.round(a.z * 50));
+      d.setUint8(17, Math.round(a.diff * 100));
+      d.setUint8(18, Math.round(a.mag * 100));
+
+      Bluetooth.println(d.buffer);
     }
+    samplesCollected++;
+    prevWriteTimestamp = now;
   }
 };
+
+// ---------------------------- Initial function calls ------------------------
 // Listen for HRM values
 Bangle.on("HRM-raw", getHR);
 

@@ -4,6 +4,7 @@
  * and initializes and handles UI functions. */
 
 import { io } from "../../../node_modules/socket.io/client-dist/socket.io.esm.min.js";
+// import * as CanvasJS from "../../../node_modules/@canvasjs/charts/canvasjs.min.js";
 
 // Message handling
 const socket = io();
@@ -49,6 +50,8 @@ socket.on("watchInfoAll", (data) => {
     addButtons(`${data.DeviceID}-buttons`, ctlButtons, data.DeviceID);
   }
 });
+
+let sample = 0;
 
 // Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
@@ -109,6 +112,14 @@ socket.on("watchInfoSingle", (data) => {
           option.innerHTML = e;
           updateStorage.appendChild(option);
         });
+        break;
+      case "liveData":
+        // console.log(data);
+        sample++;
+        if (sample % 20 == 0) {
+          sample = 0;
+          updateChart(data);
+        }
         break;
       default:
         let updateElement = document.getElementById(
@@ -342,14 +353,9 @@ let updateWatch = function (data) {
 
 // Create UI
 let ctlButtons = {
-  reconnect: "Reconnect",
-  getName: "Get Name",
-  getStorageList: "Get Storage",
-  getFiles: "Get File",
   sync: "Sync Time",
-  recordStart: "Start Rec",
-  recordStop: "Stop Rec",
-  getDrift: "Get Drift",
+  streamStart: "Start Stream",
+  streamStop: "Stop Stream",
   sendCommand: "Send Cmd: ",
 };
 
@@ -358,3 +364,79 @@ addButtons("main-controls", ctlButtons, "all");
 // TODO: collapsible
 // TODO: explain symbols/offsets/...
 // TODO: center title/padding
+
+//Chart Setup
+
+window.onload = function () {
+  chart.render();
+};
+
+var chart = new CanvasJS.Chart("container", {
+  theme: "dark2",
+  backgroundColor: "#000000",
+  title: {
+    text: "Live Data",
+  },
+  axisY: {
+    title: "Heart rate (bpm)",
+    gridColor: "#1E1E1E",
+    gridThickness: 1,
+    minimum: 40,
+    maximum: 200,
+  },
+  axisX: {
+    title: "Time",
+    valueFormatString: "", //"mm:ss",
+    labelFormatter: function () {
+      return " ";
+    },
+  },
+  // toolTip: {
+  //   shared: "true",
+  // },
+  // legend: {
+  //   cursor: "pointer",
+  // },
+  data: [],
+});
+
+var devices = [];
+var dataLength = 30; // number of dataPoints visible at any point
+
+var updateChart = function (data) {
+  // If new device, add to chart
+  if (data.DeviceID in devices) {
+    devices[`${data.DeviceID}`].push({
+      x: data.value.dt,
+      y: data.value.hrmBpm,
+      // y: data.value.hrmFilt,
+    });
+  } else {
+    console.log(data);
+    console.log(`creating new device: ${data.DeviceID}`);
+    devices[`${data.DeviceID}`] = [
+      {
+        x: data.value.dt,
+        // y: data.value.hrmFilt,
+        y: data.value.hrmBpm,
+      },
+    ];
+    chart.options.data.push({
+      type: "line",
+      name: data.DeviceID,
+      showInLegend: true,
+      legendText: data.DeviceID,
+      dataPoints: devices[`${data.DeviceID}`],
+      markerType: "none",
+    });
+  }
+
+  // For each device in data, shift when 200 items in array
+  for (var d in devices) {
+    if (devices[d].length > dataLength) {
+      devices[d].shift();
+    }
+  }
+
+  chart.render();
+};
