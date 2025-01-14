@@ -44,7 +44,7 @@ jupyter lab
 ```
 
 Jupyter should open up in your web browser.
-Follow the script there.
+Follow the instructions in the notebook: `postprocessing_template.ipynb`
 
 ## Resources
 
