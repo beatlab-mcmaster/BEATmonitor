@@ -1,0 +1,30 @@
+project_dir: template_example # Currently unused
+
+timezone: America/Toronto # The timezone of data collection
+
+directories:
+  data:
+    raw: ../data/raw/ # Raw data directory
+    processed: ../template_example/data/processed/ # Optional, processed data stored here
+    summary: ../template_example/results/summary/ # Data summary csv files stored here
+  figures: ../template_example/results/figures/ # Output directory for figures
+  tables: ../template_example/results/tables/ # Output directory for tables
+
+access_data:
+  minimum_record_length: 6000 # Optional, data under this duration will be excluded
+  minimum_sample_rate: 20 # Optional, data under this average sample rate will be excluded
+  trim_data_before: 2024-11-16 01:20:00.0 # Optional, data before this time are excluded
+  trim_data_after: 2024-11-16 01:50:00.0 # Optional, data after this time are excluded
+
+pipelines:
+  HR_resample_rate: 1000 # The resample rate in ms for processing HR data
+  PPG_resample_rate: 25 # The resample rate in ms for processing PPG data
+  interpolation_rate: 1 # In ms; preliminary step for resampling PPG data (quality degrades if set higher than 1)
+
+reporting:
+  plot_template: plotly_dark # Choose a plotly theme for all plots
+  colors: # Specifiy a consistent color template TODO:
+    - "#648FFF"
+    - "#785EF0"
+    - "#FE6100"
+    - "#FFB000"
