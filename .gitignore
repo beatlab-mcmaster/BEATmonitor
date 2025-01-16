@@ -1,5 +1,6 @@
 **/.DS_Store
 Session.vim
+pyrightconfig.json
 
 **/node_modules/*
 **/logs/*
