@@ -11,11 +11,17 @@ hd.shade.cmap = ["lightblue", "darkblue"]
 hv.extension("bokeh", "matplotlib")
 
 
-def plot_integer_column(
-    df, time_col="time", value_col="values", output_filename="plot"
+def plot_PPG_signal(
+    df,
+    time_col="time",
+    value_col="values",
+    output_filename="plot",
+    fig_size=(1600, 800),
+    output_html=False,
+    output_svg=True,
 ):
     """
-    Plot integers from a DataFrame using Datashader, and print the time elapsed to produce the plot.
+    Plot integers timeseries using Datashader
 
     Parameters:
         df (pd.DataFrame): DataFrame containing the data to plot.
@@ -24,7 +30,7 @@ def plot_integer_column(
         output_filename (str): Filename to save the plot image.
 
     Returns:
-        None
+        A plot of the data using Datashader.
     """
     if time_col not in df.columns or value_col not in df.columns:
         raise ValueError(
@@ -33,44 +39,46 @@ def plot_integer_column(
 
     start_time = time.time()  # Start timing
 
-    # Create a Datashader Canvas
-    canvas = ds.Canvas(
-        plot_width=800,
-        plot_height=400,
-        x_range=(df[time_col].min(), df[time_col].max()),
-        y_range=(df[value_col].min(), df[value_col].max()),
-    )
+    # Create a Holoviews Points +Datashader object
+    hv.output(backend="bokeh")
+    points = hv.Curve(df)
 
-    # Aggregate the data
-    aggregation = canvas.line(df, x=time_col, y=value_col)
+    if output_html:
+        # Plot settings (See: https://holoviews.org/user_guide/Plotting_with_Bokeh.html#)
+        points.opts(width=fig_size[0], height=fig_size[1], tools=["hover"])
 
-    # Create a plot
-    image = tf.shade(aggregation, cmap=["lightblue", "darkblue"])
+    hv.save(points, f"{output_filename}.html")
 
-    # Export the image
-    export_image(image, filename=output_filename, background="white")
+    if output_svg:
+        # Plot settings (See: https://holoviews.org/user_guide/Plotting_with_Matplotlib.html#)
+        hv.output(backend="matplotlib")
+        points.opts(aspect=2, fig_inches=fig_size[0] / 100)
+        hv.save(points, f"{output_filename}.svg")
 
     end_time = time.time()  # End timing
     elapsed_time = end_time - start_time  # Calculate elapsed time
 
     # Print elapsed time
-    print(f"Plot produced: '{output_filename}.png' [time: {elapsed_time:.2f} seconds]")
+    print(f"Rendered: '{output_filename}' [in {elapsed_time:.2f} seconds]")
+
+    plot = hd.datashade(
+        points
+    )  # TODO: No effect with save; Check this output in notebook
+
+    return plot
 
 
 # Example Usage:
 # Create example data
-points = round(1e7)
+points = round(1e6)
 
 data = {
     "time": np.linspace(0, 360 * 10, points),  # time in milliseconds
 }
-
 data["values"] = np.sin(np.pi / 360 * data["time"])  # arbitrary values
-
 df = pd.DataFrame(data)
 
-plot_integer_column(df)
+plot_PPG_signal(df, output_html=True)
 
-points = hv.Points(df.sample(10000))
-points.opts(width=800, height=400, tools=["hover"], color="values", cmap="viridis")
-hv.save(points, "points.html")
+# TODO: Test with PPG data!
+#
