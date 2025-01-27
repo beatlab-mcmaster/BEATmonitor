@@ -1,0 +1,59 @@
+---
+title: BEATwatch User Guide
+subtitle: Instructions for manual operation
+author: Maya B. Flannery
+date: 2025-01-19
+
+format:
+  html: default
+  pdf: default
+---
+
+
+
+## About BEATwatch
+
+*BEATwatch* is a watch application that runs on the [*Bangle.js 2*](https://banglejs.com) smartwatch.
+The application is designed to record heart rate through a (photoplethysmography; PPG) sensor on the back of the watch face (a little green LED flashes when the sensor is on; see @fig-watch-back).
+When properly attached to a person's wrist, fluctuations in blood volume just under the skin are recorded many times per second (25 Hz), which produces a wave with 'peaks' that represent each single heart beat.
+Beats can be recorded, and stored onto the watch's memory, for up to three hours.
+By recording heart beats in this way, we can precisely extract common measures such as heart rate (HR) and heart rate variably (HRV), and other measures (e.g., breathing rate), and analyse their relationships with experimental stimuli.
+
+## User interface
+
+![Watch components: back.](./Watch-back.png){#fig-watch-back width=40% fig-align="left"}
+
+## Setup
+
+To prepare the watch for recording, follow these steps:
+
+1. Make sure the watch is fully charged.
+2. If the watch is not on, hold the side button for a few seconds and the screen will turn on showing the boot process. The *BEATwatch* application is automatically loaded (this generally only takes a few seconds).
+3. Fasten the watch to the particiapnt's wrist. The watch should not be uncomfortably tight, but not too loose. **A loose fitting watch will not accurately record heart rate**.
+
+
+## Collecting data
+
+To **Start** recording heart rate:
+
+1. Press the side button on the watch so the screen lights up.
+2. Touch the 'WAIT' box on the screen. 'WAIT' will change to 'RECORDING'. The number of samples recorded will update every minute.
+
+To **Stop** recording:
+
+1. Press the side button on the watch quickly (~5 times in 3 seconds). 'RECORDING' will change back to 'WAIT'.
+2. **Note:** Holding the side button on the watch for 3 seconds will **reset** the watch. If the watch was recording, it will still be saved to the watch (one line of metadata will be missing from the record, the data can still be analysed though). However, the 'RECORDING' status will be set back to 'WAIT' when the watch reboots.
+
+## Saving data
+
+Files are automatically written to the watch while recording.
+There is limited space on the watch though, so after 3 hours of recording (either continuous, or in separate records), files should be transfered from the watch to your computer.
+To transfer files, see the \[BEATmonitor\] (under construction) guide.
+
+
+Data collection Feb 25
+Monday 24 pick up ---> 10 watches
+Six sessions
+Wear full session -- exploratory
+5 mins pre/post each session
+HRV at the end of session
