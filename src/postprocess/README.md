@@ -20,6 +20,10 @@ See [instructions](https://docs.anaconda.com/miniconda/install/#installing-minic
 
 ### Initialize environment
 
+In the Terminal, run the following commands
+
+- Note: on Windows, open the 'Anaconda prompt' to run the initialization.
+
 ```bash
 conda env create -f environment.yml
 ```
@@ -44,7 +48,10 @@ jupyter lab
 ```
 
 Jupyter should open up in your web browser.
+
 Follow the instructions in the notebook: `postprocessing_template.ipynb`
+
+- Note: the notebook is located in the `src/postprocess/scripts/` folder of this repository.
 
 ## Resources
 
