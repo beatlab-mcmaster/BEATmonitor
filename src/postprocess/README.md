@@ -59,3 +59,32 @@ Follow the instructions in the notebook: `postprocessing_template.ipynb`
 
 Guide to convert [Jupyter notebooks to Python](https://linuxhaxor.net/code/convert-jupyter-notebook-python.html)
 Guide to [Python project setup](https://goodresearch.dev/setup)
+
+## Dependencies
+
+### From history
+
+`conda env export --from-history`
+
+```yaml
+name: bangle_post_processing
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dask=2024.12.1
+  - datashader=0.16.3
+  - flatten-dict=0.4.2
+  - jupyterlab=4.3.4
+  - neurokit2=0.2.10
+  - pandas=2.2.2
+  - plotly=5.24.1
+  - pyarrow=18.1.0
+  - python-kaleido=0.2.1
+  - python=3.11.0
+  - pytz=2024.2
+  - pyyaml=6.0.2
+  - xarray=2025.1.1
+  - holoviews
+  - selenium
+```
