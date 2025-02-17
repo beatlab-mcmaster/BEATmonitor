@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = join(dirname(fileURLToPath(import.meta.url)), "../");
 
 const settings = {
+  // Add new devices to the experiment (true) or limit to previously set devices (false)
+  allowNewDevices: false,
   // Directory settings
   directory: {
     // .json files are created when Bangle.js watches are found
@@ -20,7 +22,7 @@ const settings = {
   },
 
   // Server settings
-  port: 3001, // Change port if it conflicts with another local process
+  port: 3009, // Change port if it conflicts with another local process
   routePublic: join(__dirname, "public"),
   routeNodeModules: join(__dirname, "node_modules"),
   index: join(__dirname, "public/dashboard.html"),
