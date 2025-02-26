@@ -147,6 +147,9 @@ io.on("connection", (socket: Socket) => {
           case "getDrift":
             e.getDriftEstimate();
             break;
+          case "sendSurvey":
+            e.sendSurvey();
+            break;
           case "sendCommand":
             e.sendEvent(data.msg);
             break;
@@ -196,6 +199,9 @@ io.on("connection", (socket: Socket) => {
           break;
         case "sendFiles":
           knownWatches.get(data.device).getDataFile();
+          break;
+        case "sendSurvey":
+          knownWatches.get(data.device).sendSurvey();
           break;
         case "sendCommand":
           knownWatches.get(data.device).sendEvent(data.msg);

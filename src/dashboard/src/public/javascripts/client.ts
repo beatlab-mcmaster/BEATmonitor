@@ -350,6 +350,7 @@ let ctlButtons = {
   recordStart: "Start Rec",
   recordStop: "Stop Rec",
   getDrift: "Get Drift",
+  sendSurvey: "Send Survey",
   sendCommand: "Send Cmd: ",
 };
 

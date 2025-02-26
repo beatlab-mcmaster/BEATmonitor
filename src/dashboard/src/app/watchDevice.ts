@@ -446,6 +446,23 @@ class WatchDevice extends EventEmitter {
     });
   }
 
+  // Call 'changeState(State.Buzz);' on watch
+  sendSurvey() {
+    return new Promise<void>((resolve) => {
+      this._connect(
+        () => {
+          this._write("changeState(State.Buzz);");
+        },
+        (data) => {
+          this._disconnect();
+          setTimeout(() => {
+            resolve();
+          }, settings.delay);
+        },
+      );
+    });
+  }
+
   // Call 'stopRecord()' on watch
   stopRecording() {
     return new Promise<void>((resolve) => {
@@ -577,6 +594,7 @@ class WatchDevice extends EventEmitter {
             return;
           }
           this.connected = true;
+          this._logging("Connected");
           this.getInfoSingle("connected");
           this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
@@ -589,6 +607,8 @@ class WatchDevice extends EventEmitter {
                 services,
                 settings.uuid.btUARTService, // BT protocol: see config.ts
               );
+              // this._logging("Services: " + services);
+              // this._logging("Characteristics: " + characteristics);
               this.txCharacteristic = findByUUID(
                 characteristics,
                 settings.uuid.txCharacteristic,
