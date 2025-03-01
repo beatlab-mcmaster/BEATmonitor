@@ -354,7 +354,79 @@ let ctlButtons = {
   sendCommand: "Send Cmd: ",
 };
 
+function addServerNotes(id: string) {
+  let selElement = document.getElementById(id)!;
+  const form = document.createElement("form");
+  form.id = "myForm";
+
+  const textLabel = document.createElement("label");
+  textLabel.setAttribute("for", "textInput");
+  textLabel.textContent = "Enter note:";
+
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.id = "textInput";
+  textInput.name = "textInput";
+  textInput.required = true;
+
+  const optionLabel = document.createElement("label");
+  optionLabel.textContent = "Section:";
+
+  const option1 = document.createElement("input");
+  option1.type = "radio";
+  option1.id = "option1";
+  option1.name = "options";
+  option1.value = "Start";
+  option1.required = true;
+
+  const option1Label = document.createElement("label");
+  option1Label.setAttribute("for", "option1");
+  option1Label.textContent = "Start";
+
+  const option2 = document.createElement("input");
+  option2.type = "radio";
+  option2.id = "option2";
+  option2.name = "options";
+  option2.value = "End";
+
+  const option2Label = document.createElement("label");
+  option2Label.setAttribute("for", "option2");
+  option2Label.textContent = "End";
+
+  const submitButton = document.createElement("button");
+  submitButton.type = "submit";
+  submitButton.textContent = "Create Note";
+
+  form.appendChild(textLabel);
+  form.appendChild(textInput);
+  form.appendChild(optionLabel);
+  form.appendChild(option1);
+  form.appendChild(option1Label);
+  form.appendChild(option2);
+  form.appendChild(option2Label);
+  form.appendChild(submitButton);
+
+  selElement.appendChild(form);
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const textInputValue = textInput.value;
+    const selectedOption = document.querySelector(
+      'input[name="options"]:checked',
+    )?.value;
+
+    if (selectedOption) {
+      let note = { text: textInputValue, section: selectedOption };
+      console.log("Sending note:", JSON.stringify(note));
+      socket.emit("btn-note", note);
+    } else {
+      alert("Please select an option");
+    }
+  });
+}
+
 addButtons("main-controls", ctlButtons, "all");
+addServerNotes("serverNotes");
 
 // TODO: collapsible
 // TODO: explain symbols/offsets/...

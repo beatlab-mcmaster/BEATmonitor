@@ -121,6 +121,10 @@ io.on("connection", (socket: Socket) => {
     logger.log("info", `Client Info: ${msg}`);
   });
 
+  socket.on("btn-note", (note): void => {
+    logger.log("info", `SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
+  });
+
   socket.on("ui-btn", (msg): void => {
     logger.log("info", `Client UI: ${msg}`);
   });
@@ -129,7 +133,8 @@ io.on("connection", (socket: Socket) => {
     // Handle button presses sent from client
     logger.log(
       "info",
-      `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
+      `SERVER NOTE: {"Command": ${JSON.stringify(data)}}`,
+      // `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
     );
     if (data.device == "all") {
       // Send command to all watches
