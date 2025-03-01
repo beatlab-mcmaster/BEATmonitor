@@ -324,7 +324,8 @@ class WatchDevice extends EventEmitter {
   getDataFile(fileName: string) {
     let dataBuffer: string = ""; // data are sent in packets, required for parsing
     let recievedFile: string[] = []; // store clean lines of data
-    let receivedFileName = Date.now().toString(); // Default filename
+    let transferDate = Date.now().toString(); // date of transfer
+    let receivedFileName = `def_${transferDate}_${this.watchName}.csv`; // Default filename
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
@@ -336,8 +337,9 @@ class WatchDevice extends EventEmitter {
           line = dataBuffer.split("\r\n"); // this is a full line
           dataBuffer = line.pop() ?? ""; // buffer now equals part of next line
           line.forEach((e) => {
-            let ln: string = e.replace(/\r|>|/g, ""); // remove weird carriage returns
+            let ln: string = e.replace(/\r|>|\n/g, ""); // remove weird carriage returns
             ln = ln.replace(/^\x1b?\[J/, ""); // and characters
+            console.log(ln);
             if (ln.length != 0) {
               if (ln.includes("[INFO] Sending file")) {
                 this.progressMsg = ln; // display progress
@@ -346,18 +348,15 @@ class WatchDevice extends EventEmitter {
                 this.getInfoSingle("progress");
               } else if (ln.includes(`{"File":`)) {
                 // Parse the filename
-                if (ln.includes("_W")) {
+                if (ln.includes("File")) {
+                  let file = JSON.parse(ln);
                   receivedFileName =
-                    "2024-" + // TODO: change hard code
-                    (
-                      ln
-                        ?.match(/\"Name\":\"(..-..T..:..:.._...._W...)/)
-                        ?.at(1) ?? "Error"
-                    )
-                      ?.replace(/:/g, "-")
-                      ?.replace("T", "_time_") +
-                    ".csv";
+                    file.File.Name?.replace(/:/g, "-")?.replace(
+                      "T",
+                      "_time_",
+                    ) ?? receivedFileName + ".csv";
                 }
+                console.log(receivedFileName); // TODO: fix this!
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
                 recievedFile.push(ln); // add json line to file (line 2)
@@ -454,6 +453,7 @@ class WatchDevice extends EventEmitter {
           this._write("changeState(State.Buzz);");
         },
         (data) => {
+          this._logging(data);
           this._disconnect();
           setTimeout(() => {
             resolve();
