@@ -339,7 +339,7 @@ class WatchDevice extends EventEmitter {
           line.forEach((e) => {
             let ln: string = e.replace(/\r|>|\n/g, ""); // remove weird carriage returns
             ln = ln.replace(/^\x1b?\[J/, ""); // and characters
-            console.log(ln);
+            // console.log(ln); // debug -- clean line of data
             if (ln.length != 0) {
               if (ln.includes("[INFO] Sending file")) {
                 this.progressMsg = ln; // display progress
