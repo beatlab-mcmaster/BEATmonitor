@@ -325,7 +325,13 @@ class WatchDevice extends EventEmitter {
     let dataBuffer: string = ""; // data are sent in packets, required for parsing
     let recievedFile: string[] = []; // store clean lines of data
     let transferDate = Date.now().toString(); // date of transfer
-    let receivedFileName = `def_${transferDate}_${this.watchName}.csv`; // Default filename
+    let fileType = ".csv";
+    let receivedFileName = `def_${transferDate}_${this.watchName}${fileType}`; // Default filename
+    if (fileName.includes("SV")) {
+      fileType = ".sv";
+    } else if (fileName.includes("HR")) {
+      fileType = ".hr";
+    }
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
@@ -346,16 +352,11 @@ class WatchDevice extends EventEmitter {
               } else if (ln.includes("[Progress]")) {
                 this.progressMsg = ln;
                 this.getInfoSingle("progress");
-              } else if (ln.includes(`{"File":`)) {
-                // Parse the filename
-                if (ln.includes("File")) {
-                  let file = JSON.parse(ln);
-                  receivedFileName =
-                    file.File.Name?.replace(/:/g, "-")?.replace(
-                      "T",
-                      "_time_",
-                    ) ?? receivedFileName + ".csv";
-                }
+              } else if (ln.includes("File")) {
+                let file = JSON.parse(ln);
+                receivedFileName =
+                  file.File.Name?.replace(/:/g, "-")?.replace("T", "_time_") +
+                  fileType;
                 console.log(receivedFileName); // TODO: fix this!
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
