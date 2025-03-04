@@ -130,6 +130,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("btn-click", (data) => {
+    let delay = 0;
     // Handle button presses sent from client
     logger.log(
       "info",
@@ -139,37 +140,40 @@ io.on("connection", (socket: Socket) => {
     if (data.device == "all") {
       // Send command to all watches
       knownWatches.forEach((e) => {
-        switch (data.cmd) {
-          case "recordStart":
-            e.startRecording();
-            break;
-          case "recordStop":
-            e.stopRecording();
-            break;
-          case "sync":
-            e.setTime();
-            break;
-          case "getDrift":
-            e.getDriftEstimate();
-            break;
-          case "sendSurvey":
-            e.sendSurvey();
-            break;
-          case "sendCommand":
-            e.sendEvent(data.msg);
-            break;
-          case "getStorageList":
-            e.getStorageInfo();
-            break;
-          case "getFiles":
-            if (data.msg != undefined) {
-              e.getDataFile(data.msg);
-              console.log("data:", data.msg);
-            } else {
-              console.log(`skipping device: ${data.device}`);
-            }
-            break;
-        }
+        setTimeout(() => {
+          switch (data.cmd) {
+            case "recordStart":
+              e.startRecording();
+              break;
+            case "recordStop":
+              e.stopRecording();
+              break;
+            case "sync":
+              e.setTime();
+              break;
+            case "getDrift":
+              e.getDriftEstimate();
+              break;
+            case "sendSurvey":
+              e.sendSurvey();
+              break;
+            case "sendCommand":
+              e.sendEvent(data.msg);
+              break;
+            case "getStorageList":
+              e.getStorageInfo();
+              break;
+            case "getFiles":
+              if (data.msg != undefined) {
+                e.getDataFile(data.msg);
+                console.log("data:", data.msg);
+              } else {
+                console.log(`skipping device: ${data.device}`);
+              }
+              break;
+          }
+        }, delay);
+        delay += 50;
       });
     } else {
       // Send command to single watch
