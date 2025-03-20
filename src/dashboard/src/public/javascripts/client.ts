@@ -101,12 +101,17 @@ socket.on("watchInfoSingle", (data) => {
         // Add file list to storage selector
         let updateStorage = document.getElementById(
           `storageList-${data.DeviceID}`,
-        )!;
-        data.value.forEach((e: string) => {
+        ) as HTMLSelectElement;
+        // Remove old options
+        while (updateStorage.options.length) updateStorage.remove(0);
+        // Resize list to show all files
+        updateStorage.size = data.value.files.length;
+        // Add file list to storage selector
+        data.value.files.forEach((e) => {
           console.log(e);
           let option = document.createElement("option");
-          option.value = e;
-          option.innerHTML = e;
+          option.value = e.name;
+          option.text = e.name + `  \t[ ${e.size.toLocaleString()} bytes ]`;
           updateStorage.appendChild(option);
         });
         break;

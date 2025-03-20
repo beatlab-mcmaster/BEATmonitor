@@ -27,7 +27,7 @@ class WatchDevice extends EventEmitter {
   driftTimeout: ReturnType<typeof setInterval>; // calculate drift at set interval
   nearby: number | string = "na";
   connected = false;
-  state: string = "Unknown";
+  state: object = {};
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
   avgOffset: string | number = "Not set";
@@ -298,19 +298,27 @@ class WatchDevice extends EventEmitter {
 
   // Retrieve a list of all storage files on the watch
   getStorageInfo() {
+    let dataBuffer: string = ""; // data are sent in packets, required for parsing
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
           this._write(`if(1)sendStorage();`);
         },
         (data: string) => {
-          this.storage = data
-            .replace(/(\x01)|(\r\n)|(\\r\\n)|(>)/g, "")
-            .split(",");
-          console.log(this.storage);
-          this.getInfoSingle("storage");
-          this._disconnect();
+          dataBuffer += data; // add packet to buffer
+          if (dataBuffer.includes("[EOF]")) {
+            (dataBuffer = dataBuffer.replaceAll(
+              /(\\u0001|\x01)|(\r\n)|(\\r\\n)|(>)|\[EOF\]/g,
+              "",
+            )),
+              console.log(dataBuffer);
+            this.storage = JSON.parse(dataBuffer);
+            this._disconnect();
+            console.log(this.storage);
+            this.getInfoSingle("storage");
+          }
           setTimeout(() => {
+            this._disconnect();
             resolve();
           }, settings.delay);
         },

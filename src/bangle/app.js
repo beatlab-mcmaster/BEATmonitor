@@ -259,8 +259,17 @@ let setWatchId = function (watchID) {
 // ----------------------- Storage management / transfer ----------------------
 let sendStorage = function () {
   if (state == "WAIT") {
+    let files = { files: [] };
     let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
-    print(storageFiles.join());
+    storageFiles.forEach((e) => {
+      let f = storage.open(e.replace("\u0001", ""), "r");
+      let l = f.getLength();
+      files.files.push({
+        name: e,
+        size: l,
+      });
+    });
+    print(JSON.stringify(files) + "[EOF]");
   } else {
     print("[INFO] Watch is busy, cannot send storage!");
   }
