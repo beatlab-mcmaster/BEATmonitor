@@ -316,6 +316,21 @@ class WatchDevice extends EventEmitter {
             this._disconnect();
             console.log(this.storage);
             this.getInfoSingle("storage");
+            try {
+              // write file to computer
+              fs.writeFile(
+                settings.directory.filesOnDevice + this.deviceId + ".json",
+                JSON.stringify(this.storage),
+                (err) => {
+                  if (err) {
+                    console.log(`write> ${err}`);
+                  } else {
+                  }
+                },
+              );
+            } catch (err) {
+              console.error(err);
+            }
           }
           setTimeout(() => {
             this._disconnect();

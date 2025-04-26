@@ -351,6 +351,7 @@ let ctlButtons = {
   getName: "Get Name",
   getStorageList: "Get Storage",
   getFiles: "Get File",
+  verifyFiles: "Verify Files",
   sync: "Sync Time",
   recordStart: "Start Rec",
   recordStop: "Stop Rec",

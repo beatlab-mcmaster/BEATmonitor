@@ -53,6 +53,23 @@ fs.readdirSync(settings.directory.watchList).forEach((file) => {
   }
 });
 
+// Read transferred files
+let readTransferredFiles = function () {
+  let fileInfo: { name: string; size: number }[] = [];
+  let extensions: string[] = [".csv", ".hr", ".sv"];
+  fs.readdirSync(settings.directory.transferredData).forEach((file) => {
+    if (extensions.some((ext) => file.endsWith(ext))) {
+      // Get size of file
+      let size = fs.statSync(
+        join(settings.directory.transferredData, file),
+      ).size;
+      fileInfo.push({ name: file, size: size });
+    }
+  });
+  return fileInfo;
+};
+var transferredFiles = readTransferredFiles();
+
 // Start web server
 server.listen(settings.port, () => {
   logger.log("info", `Server is running: http://localhost:${settings.port}`);
@@ -115,6 +132,11 @@ noble.on("discover", async function (dev) {
 // Handle browser messages (from clients)
 io.on("connection", (socket: Socket) => {
   logger.log("info", "Socket connected");
+
+  socket.on("rsa", (msg): void => {
+    logger.log("info", `RSA: ${JSON.stringify(msg)}`);
+  });
+
   socket.emit("clearAll", "clear");
 
   socket.on("info", (msg): void => {
@@ -217,6 +239,24 @@ io.on("connection", (socket: Socket) => {
           break;
         case "getFiles":
           knownWatches.get(data.device).getDataFile(data.msg);
+          break;
+        case "verifyFiles":
+          transferredFiles = readTransferredFiles();
+          let deviceFiles = knownWatches.get(data.device).storage;
+          deviceFiles.files.forEach((file) => {
+            // Match file name and size
+            let match = transferredFiles.find(
+              (e) =>
+                e.name.replace(/\.sv|\.hr|\.csv/g, "").replace("_time_", "T") ==
+                  file.name.replace(/HR|SV/g, "").replaceAll(":", "-") &&
+                e.size == file.size,
+            );
+            if (match) {
+              console.log("Matched file: ", match);
+            } else {
+              console.log("File not matched: ", file);
+            }
+          });
           break;
       }
     }

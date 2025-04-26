@@ -17,6 +17,8 @@ const settings = {
   directory: {
     // .json files are created when Bangle.js watches are found
     watchList: join(__dirname, "watchData/watchList/"),
+    // .json files are created listing the files on the watch
+    filesOnDevice: join(__dirname, "watchData/filesOnDevice/"),
     // .csv files are created when data are transferred from watches
     transferredData: join(__dirname, "watchData/transferredData/"),
   },
