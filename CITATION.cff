@@ -1,0 +1,45 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: BEATmonitor
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Maya
+    family-names: Flannery
+    email: mayabflannery@gmail.com
+    affiliation: McMaster University
+    orcid: 'https://orcid.org/0000-0002-4763-7565'
+  - given-names: Lauren
+    family-names: Fink
+    email: finkl1@mcmaster.ca
+    affiliation: McMaster University
+    orcid: 'https://orcid.org/0000-0001-6699-750X'
+repository-code: 'https://github.com/beatlab-mcmaster/BEATmonitor'
+abstract: >-
+  BEATMonitor is a system for collecting cardiac activity
+  data from multiple individuals simultaneously in
+  naturalistic environments. The system uses open-source and
+  low-cost technology (Bangle.js 2 smartwatches) to ensure
+  it is accessible and shareable. We hope that the system is
+  easy to setup and use, making it practical for diverse
+  research and other applications. Additionally, the system
+  aims to be customizable and easy to modify for other
+  purposes, while also being well-tested to guarantee
+  reliability. We encourage feedback to be used for further
+  development and improvements.
+keywords:
+  - heartbeat
+  - dashboard
+  - photoplethysmography
+  - smartwatch
+  - app
+  - node-js
+  - bluetooth
+license: GPL-3.0
+commit: todo
+version: todo
+date-released: '2025-04-27'
