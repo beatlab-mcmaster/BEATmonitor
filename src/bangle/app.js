@@ -1,10 +1,10 @@
-// BEATmonitor -- v0.05
+// BEATmonitor -- v0.051
 // Load storage module
 const storage = require("Storage");
 
 // Get device information
 const infoProgram = "BEATmonitor";
-const infoVersion = "v0.05";
+const infoVersion = "v0.051";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
