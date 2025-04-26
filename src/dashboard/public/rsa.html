@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Breathing Ring</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+      #timeDisplay {
+        position: fixed;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        font-family: monospace;
+        font-size: 48px;
+        color: grey;
+        z-index: 1000;
+        pointer-events: none;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="ringCanvas"></canvas>
+    <div id="timeDisplay" hidden></div>
+    <script type="module">
+      import io from "/node_modules/socket.io/client-dist/socket.io.esm.min.js";
+
+      const socket = io();
+
+      socket.on("connect", () => {
+        // If connected to server
+        console.log("Socket connected");
+      });
+
+      let timeDisplayInterval = null;
+
+      function displayTime(show) {
+        const el = document.getElementById("timeDisplay");
+
+        if (show) {
+          el.hidden = false;
+
+          if (timeDisplayInterval) return; // Already running
+
+          timeDisplayInterval = setInterval(() => {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, "0");
+            const m = String(now.getMinutes()).padStart(2, "0");
+            const s = String(now.getSeconds()).padStart(2, "0");
+            const ms = String(now.getMilliseconds()).padStart(3, "0");
+            el.textContent = `${h}:${m}:${s}:${ms}`;
+          }, 25); // update every 25ms
+        } else {
+          el.hidden = true;
+          clearInterval(timeDisplayInterval);
+          timeDisplayInterval = null;
+        }
+      }
+
+      // Configuration
+      const ringColourMain = "#0000FF"; // cyan
+      const ringColourFade = "#000088"; //
+      const ringSizeMin = 75;
+      const ringSizeMax = 200;
+      const ringAnimationTime = 4000; // milliseconds
+
+      const canvas = document.getElementById("ringCanvas");
+      const ctx = canvas.getContext("2d");
+
+      let width, height;
+      function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      // Easing function for smooth S-curve (cosine-based)
+      function easeInOut(t) {
+        return 0.5 * (1 - Math.cos(Math.PI * t));
+      }
+
+      // Linear interpolation
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      // Color interpolation (hex to RGB and back)
+      function hexToRgb(hex) {
+        const bigint = parseInt(hex.slice(1), 16);
+        return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+      }
+
+      function rgbToHex([r, g, b]) {
+        return (
+          "#" +
+          [r, g, b]
+            .map((x) => {
+              const hex = x.toString(16);
+              return hex.length === 1 ? "0" + hex : hex;
+            })
+            .join("")
+        );
+      }
+
+      function interpolateColor(color1, color2, t) {
+        const rgb1 = hexToRgb(color1);
+        const rgb2 = hexToRgb(color2);
+        const result = rgb1.map((c, i) => Math.round(lerp(c, rgb2[i], t)));
+        return rgbToHex(result);
+      }
+
+      let direction = 1; // 1 = expanding, -1 = contracting
+      let lastTrigger = null;
+      let startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = (time - startTime) % (2 * ringAnimationTime);
+        const cycleTime = elapsed % ringAnimationTime;
+        const t = easeInOut(cycleTime / ringAnimationTime);
+
+        if (elapsed < ringAnimationTime) {
+          direction = 1;
+          if (lastTrigger !== "min" && cycleTime < 20) {
+            size("min");
+            lastTrigger = "min";
+          }
+        } else {
+          direction = -1;
+          if (lastTrigger !== "max" && cycleTime < 20) {
+            size("max");
+            lastTrigger = "max";
+          }
+        }
+
+        const tAdjusted = direction === 1 ? t : 1 - t;
+        const radius = lerp(ringSizeMin, ringSizeMax, tAdjusted);
+        const ringColor = interpolateColor(
+          ringColourFade,
+          ringColourMain,
+          tAdjusted,
+        );
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw ring
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = 20;
+        ctx.stroke();
+
+        // Text
+        ctx.fillStyle = "white";
+        ctx.font = "bold 32px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+          direction === 1 ? "Breathe In" : "Breathe Out",
+          width / 2,
+          height / 2,
+        );
+
+        requestAnimationFrame(animate);
+      }
+
+      function size(state) {
+        let time = new Date();
+        let rsa = {
+          timestamp: time.toISOString(),
+          period: ringAnimationTime * 2,
+          Hz: 1 / ((ringAnimationTime / 1000) * 2),
+          cycleState: state,
+        };
+        console.log(rsa);
+        socket.emit("rsa", rsa);
+
+        // You can hook into this event
+        // e.g., dispatchEvent(new CustomEvent("size", { detail: state }));
+      }
+
+      requestAnimationFrame(animate);
+      displayTime(true);
+    </script>
+  </body>
+</html>
