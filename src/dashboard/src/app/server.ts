@@ -53,6 +53,23 @@ fs.readdirSync(settings.directory.watchList).forEach((file) => {
   }
 });
 
+// Read transferred files
+let readTransferredFiles = function () {
+  let fileInfo: { name: string; size: number }[] = [];
+  let extensions: string[] = [".csv", ".hr", ".sv"];
+  fs.readdirSync(settings.directory.transferredData).forEach((file) => {
+    if (extensions.some((ext) => file.endsWith(ext))) {
+      // Get size of file
+      let size = fs.statSync(
+        join(settings.directory.transferredData, file),
+      ).size;
+      fileInfo.push({ name: file, size: size });
+    }
+  });
+  return fileInfo;
+};
+var transferredFiles = readTransferredFiles();
+
 // Start web server
 server.listen(settings.port, () => {
   logger.log("info", `Server is running: http://localhost:${settings.port}`);
@@ -115,10 +132,19 @@ noble.on("discover", async function (dev) {
 // Handle browser messages (from clients)
 io.on("connection", (socket: Socket) => {
   logger.log("info", "Socket connected");
+
+  socket.on("rsa", (msg): void => {
+    logger.log("info", `RSA: ${JSON.stringify(msg)}`);
+  });
+
   socket.emit("clearAll", "clear");
 
   socket.on("info", (msg): void => {
     logger.log("info", `Client Info: ${msg}`);
+  });
+
+  socket.on("btn-note", (note): void => {
+    logger.log("info", `SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
   });
 
   socket.on("ui-btn", (msg): void => {
@@ -126,42 +152,50 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("btn-click", (data) => {
+    let delay = 0;
     // Handle button presses sent from client
     logger.log(
       "info",
-      `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
+      `SERVER NOTE: {"Command": ${JSON.stringify(data)}}`,
+      // `Button click: '${data.cmd}' on device: '${data.device}' [msg: '${data.msg}']`,
     );
     if (data.device == "all") {
       // Send command to all watches
       knownWatches.forEach((e) => {
-        switch (data.cmd) {
-          case "recordStart":
-            e.startRecording();
-            break;
-          case "recordStop":
-            e.stopRecording();
-            break;
-          case "sync":
-            e.setTime();
-            break;
-          case "getDrift":
-            e.getDriftEstimate();
-            break;
-          case "sendCommand":
-            e.sendEvent(data.msg);
-            break;
-          case "getStorageList":
-            e.getStorageInfo();
-            break;
-          case "getFiles":
-            if (data.msg != undefined) {
-              e.getDataFile(data.msg);
-              console.log("data:", data.msg);
-            } else {
-              console.log(`skipping device: ${data.device}`);
-            }
-            break;
-        }
+        setTimeout(() => {
+          switch (data.cmd) {
+            case "recordStart":
+              e.startRecording();
+              break;
+            case "recordStop":
+              e.stopRecording();
+              break;
+            case "sync":
+              e.setTime();
+              break;
+            case "getDrift":
+              e.getDriftEstimate();
+              break;
+            case "sendSurvey":
+              e.sendSurvey();
+              break;
+            case "sendCommand":
+              e.sendEvent(data.msg);
+              break;
+            case "getStorageList":
+              e.getStorageInfo();
+              break;
+            case "getFiles":
+              if (data.msg != undefined) {
+                e.getDataFile(data.msg);
+                console.log("data:", data.msg);
+              } else {
+                console.log(`skipping device: ${data.device}`);
+              }
+              break;
+          }
+        }, delay);
+        delay += 50;
       });
     } else {
       // Send command to single watch
@@ -197,11 +231,32 @@ io.on("connection", (socket: Socket) => {
         case "sendFiles":
           knownWatches.get(data.device).getDataFile();
           break;
+        case "sendSurvey":
+          knownWatches.get(data.device).sendSurvey();
+          break;
         case "sendCommand":
           knownWatches.get(data.device).sendEvent(data.msg);
           break;
         case "getFiles":
           knownWatches.get(data.device).getDataFile(data.msg);
+          break;
+        case "verifyFiles":
+          transferredFiles = readTransferredFiles();
+          let deviceFiles = knownWatches.get(data.device).storage;
+          deviceFiles.files.forEach((file) => {
+            // Match file name and size
+            let match = transferredFiles.find(
+              (e) =>
+                e.name.replace(/\.sv|\.hr|\.csv/g, "").replace("_time_", "T") ==
+                  file.name.replace(/HR|SV/g, "").replaceAll(":", "-") &&
+                e.size == file.size,
+            );
+            if (match) {
+              console.log("Matched file: ", match);
+            } else {
+              console.log("File not matched: ", file);
+            }
+          });
           break;
       }
     }

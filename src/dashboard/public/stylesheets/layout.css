@@ -45,6 +45,7 @@ h3 {
     "leftSide watchList na"
     "leftSide watchList na"
     /*"leftSide commands na"*/
+    "leftSide server-notes na"
     "footer footer footer";
   & > * {
     border-left: 2px solid rgba(0, 0, 0, 0);
@@ -54,6 +55,10 @@ h3 {
   /*& > :hover {*/
   /*  border-left: 2px solid rgb(120, 120, 120);*/
   /*}*/
+}
+
+.server-notes {
+  grid-area: server-notes;
 }
 
 .footer {

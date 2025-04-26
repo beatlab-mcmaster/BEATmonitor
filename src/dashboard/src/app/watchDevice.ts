@@ -27,7 +27,7 @@ class WatchDevice extends EventEmitter {
   driftTimeout: ReturnType<typeof setInterval>; // calculate drift at set interval
   nearby: number | string = "na";
   connected = false;
-  state: string = "Unknown";
+  state: object = {};
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
   avgOffset: string | number = "Not set";
@@ -298,19 +298,42 @@ class WatchDevice extends EventEmitter {
 
   // Retrieve a list of all storage files on the watch
   getStorageInfo() {
+    let dataBuffer: string = ""; // data are sent in packets, required for parsing
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
           this._write(`if(1)sendStorage();`);
         },
         (data: string) => {
-          this.storage = data
-            .replace(/(\x01)|(\r\n)|(\\r\\n)|(>)/g, "")
-            .split(",");
-          console.log(this.storage);
-          this.getInfoSingle("storage");
-          this._disconnect();
+          dataBuffer += data; // add packet to buffer
+          if (dataBuffer.includes("[EOF]")) {
+            (dataBuffer = dataBuffer.replaceAll(
+              /(\\u0001|\x01)|(\r\n)|(\\r\\n)|(>)|\[EOF\]/g,
+              "",
+            )),
+              console.log(dataBuffer);
+            this.storage = JSON.parse(dataBuffer);
+            this._disconnect();
+            console.log(this.storage);
+            this.getInfoSingle("storage");
+            try {
+              // write file to computer
+              fs.writeFile(
+                settings.directory.filesOnDevice + this.deviceId + ".json",
+                JSON.stringify(this.storage),
+                (err) => {
+                  if (err) {
+                    console.log(`write> ${err}`);
+                  } else {
+                  }
+                },
+              );
+            } catch (err) {
+              console.error(err);
+            }
+          }
           setTimeout(() => {
+            this._disconnect();
             resolve();
           }, settings.delay);
         },
@@ -324,7 +347,14 @@ class WatchDevice extends EventEmitter {
   getDataFile(fileName: string) {
     let dataBuffer: string = ""; // data are sent in packets, required for parsing
     let recievedFile: string[] = []; // store clean lines of data
-    let receivedFileName = Date.now().toString(); // Default filename
+    let transferDate = Date.now().toString(); // date of transfer
+    let fileType = ".csv";
+    let receivedFileName = `def_${transferDate}_${this.watchName}${fileType}`; // Default filename
+    if (fileName.includes("SV")) {
+      fileType = ".sv";
+    } else if (fileName.includes("HR")) {
+      fileType = ".hr";
+    }
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
@@ -336,28 +366,21 @@ class WatchDevice extends EventEmitter {
           line = dataBuffer.split("\r\n"); // this is a full line
           dataBuffer = line.pop() ?? ""; // buffer now equals part of next line
           line.forEach((e) => {
-            let ln: string = e.replace(/\r|>|/g, ""); // remove weird carriage returns
+            let ln: string = e.replace(/\r|>|\n/g, ""); // remove weird carriage returns
             ln = ln.replace(/^\x1b?\[J/, ""); // and characters
+            // console.log(ln); // debug -- clean line of data
             if (ln.length != 0) {
               if (ln.includes("[INFO] Sending file")) {
                 this.progressMsg = ln; // display progress
               } else if (ln.includes("[Progress]")) {
                 this.progressMsg = ln;
                 this.getInfoSingle("progress");
-              } else if (ln.includes(`{"File":`)) {
-                // Parse the filename
-                if (ln.includes("_W")) {
-                  receivedFileName =
-                    "2024-" + // TODO: change hard code
-                    (
-                      ln
-                        ?.match(/\"Name\":\"(..-..T..:..:.._...._W...)/)
-                        ?.at(1) ?? "Error"
-                    )
-                      ?.replace(/:/g, "-")
-                      ?.replace("T", "_time_") +
-                    ".csv";
-                }
+              } else if (ln.includes("File")) {
+                let file = JSON.parse(ln);
+                receivedFileName =
+                  file.File.Name?.replace(/:/g, "-")?.replace("T", "_time_") +
+                  fileType;
+                console.log(receivedFileName); // TODO: fix this!
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
                 recievedFile.push(ln); // add json line to file (line 2)
@@ -437,6 +460,24 @@ class WatchDevice extends EventEmitter {
           this._write("startRecord();");
         },
         (data) => {
+          this._disconnect();
+          setTimeout(() => {
+            resolve();
+          }, settings.delay);
+        },
+      );
+    });
+  }
+
+  // Call 'changeState(State.Buzz);' on watch
+  sendSurvey() {
+    return new Promise<void>((resolve) => {
+      this._connect(
+        () => {
+          this._write("changeState(State.Buzz);");
+        },
+        (data) => {
+          this._logging(data);
           this._disconnect();
           setTimeout(() => {
             resolve();
@@ -577,6 +618,7 @@ class WatchDevice extends EventEmitter {
             return;
           }
           this.connected = true;
+          this._logging("Connected");
           this.getInfoSingle("connected");
           this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
@@ -589,6 +631,8 @@ class WatchDevice extends EventEmitter {
                 services,
                 settings.uuid.btUARTService, // BT protocol: see config.ts
               );
+              // this._logging("Services: " + services);
+              // this._logging("Characteristics: " + characteristics);
               this.txCharacteristic = findByUUID(
                 characteristics,
                 settings.uuid.txCharacteristic,

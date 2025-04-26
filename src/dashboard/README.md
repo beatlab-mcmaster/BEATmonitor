@@ -222,9 +222,37 @@ message'** field:
 
   - Click **Send Event** on the corresponding watch in the list.
 
+## 9. Send custom commands
+
+- `buzz(nTimes)`
+- `changeState(newState)`
+- `deleteStorage(files)`
+- `getDrift()`
+- `resetWatch()`
+- `saveResponse()`
+- `sendData(fileName)`
+- `sendStorage()`
+- `sendWatchId()`
+- `setVibrate(time, strength)`
+- `setWatchId(newId)`
+- `startRecord()`
+- `stopRecord()`
+- `startStreaming()`
+- `stopStreaming()`
+- `syncTime()`
+- `wait()`
+
 ## Troubleshooting
 
 Create an [issue](https://github.com/beatlab-mcmaster/BEATmonitor/issues).
+
+### `uncaught undefined` on boot
+
+Only 2 of 40 watches have been observed to have this issue. It might be due to
+a problem install programs or firmware.
+
+This was fixed by updating the `boot` application on the AppLoader. Upgrading
+`Bootloader` from `v5.9` -> `v6.5` solved the issue.
 
 ## Resources
 
