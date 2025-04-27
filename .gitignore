@@ -1,20 +1,22 @@
 **/.DS_Store
-Session.vim
-pyrightconfig.json
 
+# Application files
+# - node install
 **/node_modules/*
-**/logs/*
+# - build files
 src/dashboard/app/*
 src/dashboard/public/javascripts/*
+# - server logs
+**/logs/*
+# - project watch data
 **/watchData/watchList/*
 **/watchData/transferredData/*
-**/watchData/synaptic-rodeo/*
-**/Spectrogram-main/*
-**/Spectrogram-main.zip
-*.heic
-src/dashboard/watchData/2024-11-19_synaptic-rodeo-data.zip
+**/watchData/filesOnDevice/*
 
-# Ignore tutorial output
+# Quarto render files
+**/*_files/*
+
+# Ignore jupyter tutorial output
 **/template_example/*
 
 # ignore Python files
@@ -190,5 +192,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-src/dashboard/watchData/watchListAll
-src/dashboard/watchData
