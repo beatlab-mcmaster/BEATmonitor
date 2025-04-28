@@ -1,6 +1,7 @@
 /** watchDevice.ts
  * Author: Maya B. Flannery
- * Description: */
+ * Description: The WatchDevice class tracks all relevant watch settings and
+ * contains functions to send and receive data from a watch */
 
 import fs from "fs";
 import logger from "./logger.js";
@@ -10,10 +11,6 @@ import type { Peripheral } from "@abandonware/noble";
 
 export type info = { [key: string]: any };
 
-/**
- * The WatchDevice class tracks all relevant watch settings and contains functions
- * to send and receive data from a watch
- * */
 class WatchDevice extends EventEmitter {
   peripheralUpdated: boolean = false;
   deviceId: string; // as 'Bangle.js xxxx'

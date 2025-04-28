@@ -1,3 +1,11 @@
+/** client-streaming.ts
+ * Author: Maya B. Flannery
+ * Description: !!Experimental!! This is a modified version of client.ts that
+ * handles a persistent connection with watches, streams PPG/HR data, and
+ * plots data in the browser. */
+
+// TODO: Does not efficiently handle plotting data from more than 3 watches -fix
+
 /** This code is included in client.ts (import conflicts) * */
 const watchDivs = [
   "buttons",

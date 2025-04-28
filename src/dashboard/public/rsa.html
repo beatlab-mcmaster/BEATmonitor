@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Breathing Ring</title>
+    <title>Respiratory Sinus Arrhythmia (RSA) - Paced breathing exercise</title>
     <style>
       html,
       body {
@@ -45,6 +45,7 @@
       let timeDisplayInterval = null;
 
       function displayTime(show) {
+        // Optionally, display time in browser as HH:MM:SS:MS
         const el = document.getElementById("timeDisplay");
 
         if (show) {
@@ -177,6 +178,7 @@
       }
 
       function size(state) {
+        // Send paced breathing time/state to server
         let time = new Date();
         let rsa = {
           timestamp: time.toISOString(),
@@ -186,9 +188,6 @@
         };
         console.log(rsa);
         socket.emit("rsa", rsa);
-
-        // You can hook into this event
-        // e.g., dispatchEvent(new CustomEvent("size", { detail: state }));
       }
 
       requestAnimationFrame(animate);

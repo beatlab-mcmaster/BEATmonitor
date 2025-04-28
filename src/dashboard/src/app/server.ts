@@ -289,6 +289,4 @@ io.engine.on("connection_error", (err) => {
 });
 
 // TODO: Resume function -- search for timestamp
-// TODO: Events/low-level commant box
 // TODO: Timesync when finished recording
-// TODO: Remove innocents language
