@@ -9,11 +9,9 @@ format:
   pdf: default
 ---
 
-
-
 ## About BEATwatch
 
-*BEATwatch* is a watch application that runs on the [*Bangle.js 2*](https://banglejs.com) smartwatch.
+*BEATwatch* is a watch application that runs on the [*Bangle.js 2*](https://banglejs.com) smartwatch (see @fig-watch-face-full).
 The application is designed to record heart rate through a (photoplethysmography; PPG) sensor on the back of the watch face (a little green LED flashes when the sensor is on; see @fig-watch-back).
 When properly attached to a person's wrist, fluctuations in blood volume just under the skin are recorded many times per second (25 Hz), which produces a wave with 'peaks' that represent each single heart beat.
 Beats can be recorded, and stored onto the watch's memory, for up to three hours.
@@ -21,7 +19,9 @@ By recording heart beats in this way, we can precisely extract common measures s
 
 ## User interface
 
-![Watch components: back.](./Watch-back.png){#fig-watch-back width=40% fig-align="left"}
+![Watch components: front.](../res/images/Watch-face-full.png){#fig-watch-face-full width=40% fig-align="center"}
+
+![Watch components: back.](../res/images/Watch-back.png){#fig-watch-back width=40% fig-align="center"}
 
 ## Setup
 
@@ -29,7 +29,7 @@ To prepare the watch for recording, follow these steps:
 
 1. Make sure the watch is fully charged.
 2. If the watch is not on, hold the side button for a few seconds and the screen will turn on showing the boot process. The *BEATwatch* application is automatically loaded (this generally only takes a few seconds).
-3. Fasten the watch to the particiapnt's wrist. The watch should not be uncomfortably tight, but not too loose. **A loose fitting watch will not accurately record heart rate**.
+3. Fasten the watch to the participant's wrist. The watch should not be uncomfortably tight, but not too loose. **A loose fitting watch will not accurately record heart rate**.
 
 
 ## Collecting data
@@ -47,13 +47,5 @@ To **Stop** recording:
 ## Saving data
 
 Files are automatically written to the watch while recording.
-There is limited space on the watch though, so after 3 hours of recording (either continuous, or in separate records), files should be transfered from the watch to your computer.
+There is limited space on the watch though, so after 3 hours of recording (either continuous, or in separate records), files should be transferred from the watch to your computer.
 To transfer files, see the \[BEATmonitor\] (under construction) guide.
-
-
-Data collection Feb 25
-Monday 24 pick up ---> 10 watches
-Six sessions
-Wear full session -- exploratory
-5 mins pre/post each session
-HRV at the end of session

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.6.40">
+<meta name="generator" content="quarto-1.6.43">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -31,10 +31,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="manual-user-instructions_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="manual-user-instructions_files/libs/quarto-html/anchor.min.js"></script>
 <link href="manual-user-instructions_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="manual-user-instructions_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="manual-user-instructions_files/libs/quarto-html/quarto-syntax-highlighting-d4d76bf8491c20bad77d141916dc28e1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="manual-user-instructions_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="manual-user-instructions_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="manual-user-instructions_files/libs/bootstrap/bootstrap-973236bd072d72a04ee9cd82dcc9cb29.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="manual-user-instructions_files/libs/bootstrap/bootstrap-c0367b04c37547644fece4185067e4a7.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 </head>
@@ -80,31 +80,29 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="about-beatwatch" class="level2">
 <h2 class="anchored" data-anchor-id="about-beatwatch">About BEATwatch</h2>
-<p><em>BEATwatch</em> is a watch application that runs on the <a href="https://banglejs.com"><em>Bangle.js 2</em></a> smartwatch. The application is designed to record heart rate through a (photoplethysmography; PPG) sensor on the back of the watch face (a little green LED flashes when the sensor is on). When properly attached to a person’s wrist, fluctuations in blood volume just under the skin are recorded many times per second (25 Hz), which produces a wave with ‘peaks’ that represent each single heart beat. Beats can be recorded, and stored onto the watch’s memory, for up to three hours. By recording heart beats in this way, we can precisely extract common measures such as heart rate (HR) and heart rate variably (HRV), and other measures (e.g., breathing rate), and analyse their relationships with experimental stimuli.</p>
-<div class="columns">
-<div class="column" style="width:50%;">
-<div id="fig-watch-front" class="quarto-float quarto-figure quarto-figure-center anchored">
+<p><em>BEATwatch</em> is a watch application that runs on the <a href="https://banglejs.com"><em>Bangle.js 2</em></a> smartwatch (see <a href="#fig-watch-face-full" class="quarto-xref">Figure&nbsp;1</a>). The application is designed to record heart rate through a (photoplethysmography; PPG) sensor on the back of the watch face (a little green LED flashes when the sensor is on; see <a href="#fig-watch-back" class="quarto-xref">Figure&nbsp;2</a>). When properly attached to a person’s wrist, fluctuations in blood volume just under the skin are recorded many times per second (25 Hz), which produces a wave with ‘peaks’ that represent each single heart beat. Beats can be recorded, and stored onto the watch’s memory, for up to three hours. By recording heart beats in this way, we can precisely extract common measures such as heart rate (HR) and heart rate variably (HRV), and other measures (e.g., breathing rate), and analyse their relationships with experimental stimuli.</p>
+</section>
+<section id="user-interface" class="level2">
+<h2 class="anchored" data-anchor-id="user-interface">User interface</h2>
+<div id="fig-watch-face-full" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-watch-front-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="./Watch-face.png" class="img-fluid figure-img" style="width:40.0%">
+<div aria-describedby="fig-watch-face-full-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../res/images/Watch-face-full.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:40.0%">
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-watch-front-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;1: Watch components: font.
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-watch-face-full-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Watch components: front.
 </figcaption>
 </figure>
 </div>
-</div><div class="column" style="width:50%;">
-<div id="fig-watch-back" class="quarto-float quarto-figure quarto-figure-left anchored" data-fig-align="left">
+<div id="fig-watch-back" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-watch-back-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="./Watch-back.png" class="img-fluid quarto-figure quarto-figure-left figure-img" style="width:40.0%">
+<img src="../res/images/Watch-back.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:40.0%">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-watch-back-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure&nbsp;2: Watch components: back.
 </figcaption>
 </figure>
-</div>
-</div>
 </div>
 </section>
 <section id="setup" class="level2">
@@ -113,7 +111,7 @@ Figure&nbsp;2: Watch components: back.
 <ol type="1">
 <li>Make sure the watch is fully charged.</li>
 <li>If the watch is not on, hold the side button for a few seconds and the screen will turn on showing the boot process. The <em>BEATwatch</em> application is automatically loaded (this generally only takes a few seconds).</li>
-<li>Fasten the watch to the particiapnt’s wrist. The watch should not be uncomfortably tight, but not too loose. <strong>A loose fitting watch will not accurately record heart rate</strong>. See figures TODO: for examples.</li>
+<li>Fasten the watch to the participant’s wrist. The watch should not be uncomfortably tight, but not too loose. <strong>A loose fitting watch will not accurately record heart rate</strong>.</li>
 </ol>
 </section>
 <section id="collecting-data" class="level2">
@@ -131,7 +129,7 @@ Figure&nbsp;2: Watch components: back.
 </section>
 <section id="saving-data" class="level2">
 <h2 class="anchored" data-anchor-id="saving-data">Saving data</h2>
-<p>Files are automatically written to the watch while recording. There is limited space on the watch though, so after 3 hours of recording (either continuous, or in separate records), files should be transfered from the watch to your computer. To transfer files, see the [BEATmonitor] (under construction) guide.</p>
+<p>Files are automatically written to the watch while recording. There is limited space on the watch though, so after 3 hours of recording (either continuous, or in separate records), files should be transferred from the watch to your computer. To transfer files, see the [BEATmonitor] (under construction) guide.</p>
 </section>
 
 </main>
