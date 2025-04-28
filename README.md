@@ -63,3 +63,27 @@ Research studies using BEATMonitor have included:
 - [LIVELab 10th Anniversary: John Ellison – Some Kind of Wonderful](https://livelab.mcmaster.ca/events/livelab-10th-anniversary-john-ellison-some-kind-of-wonderful/)
 - [LIVELab 10th Anniversary: Santee Smith and Kaha:wi Dance Theatre – Continuance Immersive Commemoration (Continuance)](https://livelab.mcmaster.ca/events/livelab-10th-anniversary-santee-smith-and-kahawi-dance-theatre-continuance-immersive-commemoration/)
 - [Canadian federal leaders' debate](https://www.cbc.ca/news/canada/hamilton/mcmaster-undecided-voters-study-1.7512327)
+
+## License
+
+BEATMonitor - Multi-person photoplethysmography using open-source smartwatch technology
+
+Copyright (C) 2025 BEAT Lab
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+## Citation
+
+This repository contains a [CITATION.cff](/CITATION.cff) file.
+If you use this project, please cite it using the information in the file or use the "Cite this repository" button on GitHub for citation info.
