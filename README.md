@@ -2,6 +2,8 @@
 
 # Record cardiac activity with Bangle.js 2 smartwatches
 
+![Watches that are ready for a study!](/res/images/watches-ready.png)
+
 ## Main publication
 
 Publication forthcoming (see our [poster](https://mayabflannery.github.io/projects/pdfs/neuromusic-20.pdf))
@@ -43,9 +45,13 @@ See [Watch documentation](src/bangle/README.md)
 
 See [Dashboard documentation](/src/dashboard/README.md)
 
+### 3. Post-processing data
+
+See [Post-processing documentation and tutorial](/src/postprocess/README.md)
+
 ## Troubleshooting
 
-Please let us know if you have any questions, problems, or suggestions by creating an issue [here](https://github.com/beatlab-mcmaster/BEATmonitor/issues).
+Please let us know if you have any questions, problems, or suggestions by creating an issue [here](https://github.com/beatlab-mcmaster/BEATmonitor/issues/new).
 
 ## Studies
 
