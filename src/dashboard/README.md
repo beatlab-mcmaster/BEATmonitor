@@ -244,7 +244,7 @@ message'** field:
 
 ## Troubleshooting
 
-Create an [issue](https://github.com/beatlab-mcmaster/BEATmonitor/issues).
+Create an issue [here](https://github.com/beatlab-mcmaster/BEATmonitor/issues/new).
 
 ### `uncaught undefined` on boot
 
