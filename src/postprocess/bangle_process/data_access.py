@@ -12,8 +12,8 @@ def get_study_file_list(data_dir, match_criteria=r".*\.csv"):
 
 
 def check_file(file_name):
-    """Return a (single row) dataframe with 'Watch', 'File' name, 'MAC' address, and
-    when the Record was started, ended, and the number of samples
+    """Return a (single row) dataframe with 'Watch', 'File' name, 'MAC'
+    address, and when the Record was started, ended, and the number of samples
     """
     # print(f'Checking file name: {file_name}')
     samples = 0
@@ -66,8 +66,8 @@ def check_file(file_name):
     return df
 
 
-def check_files_in_directory(config_dat):
-    tz = config_dat["timezone"]
+def summarise_files_in_directory(config_dat):
+    """Get summary information for all watch data files in configured directory"""
     file_dir = config_dat["directories"]["data"]["raw"]
     summary_dir = config_dat["directories"]["data"]["summary"]
     """Return a dataframe with summary of data files in specified directory"""
@@ -86,7 +86,7 @@ def check_files_in_directory(config_dat):
         df_file_summary = check_file(file_dir + d)
         df = pd.concat([df, df_file_summary])
     df = df.set_index("Watch", inplace=False).sort_index()
-    df.to_csv(summary_dir + "raw_data_summary.csv")
+    df.to_csv(summary_dir + "files_watch_summary.csv")
     return df
 
 
@@ -124,20 +124,26 @@ def get_file_summary(
     return df
 
 
-def check_records_ts(df, config_dat):
+def flag_records(df, config_dat):
     """Flag records outside of minimum length and contain minimum
     number of samples
     """
-    min_length = pd.to_timedelta(
-        config_dat["access_data"]["minimum_record_length"], unit="s"
-    )
+    seconds = config_dat["access_data"]["minimum_record_length"]
+    min_length = pd.to_timedelta(seconds, unit="s")
     min_sample_rate = config_dat["access_data"]["minimum_sample_rate"]
-    return df[
+    print(
+        "Flagging records with: ",
+        f"duration less than {seconds} seconds [{seconds/60} mins], or",
+        f"sample rate less than {min_sample_rate} samples/sec.",
+    )
+    df_flagged = df[
         (df["Duration"] < min_length)  # Record shorter than len (shortest condition)
         | (
             df["Samples"] < min_length.seconds * min_sample_rate
         )  # Low sample rate (missed samples)
     ]
+    print(f"Flagged {len(df_flagged)} records")
+    return df_flagged
 
 
 def get_raw_watch_data(df_check, config_dat, save_data=False):

@@ -33,7 +33,7 @@ def resample_PPG(df, config_dat, save_data=False):
     df_out = (
         df.groupby("watchId")
         .resample(f"{interpolation_rate}ms")
-        .interpolate()  # interpolate (works best at 1ms)
+        .interpolate()  # interpolate (works best at 1ms) # TODO
         .drop("watchId", axis=1)
         .reset_index(level=0)  # 'ungroup'
         .groupby("watchId")

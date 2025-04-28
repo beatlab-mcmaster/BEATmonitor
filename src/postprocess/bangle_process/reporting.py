@@ -3,20 +3,30 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def plot_raw_data(df, config_dat):
+def plotly_data(df, config_dat):
     """Plot all raw data"""
-    # TODO: currently downsamples, move to better plotting package?
     dir_fig_out = config_dat["directories"]["figures"]
-    resample_df = df.groupby("watchId").resample("5s", on="time").mean()
-    resample_df.reset_index(inplace=True)
+    # Downsample dataframe
+    if len(df) > config_dat["reporting"]["plot_max_samples"]:
+        # Calculate sample rate
+        sample_rate = round(len(df) / config_dat["reporting"]["plot_max_samples"])
+        print(f"Resampling raw data to {sample_rate} seconds")  # TODO: ms?
+        df = df.groupby("watchId").resample(f"{sample_rate}s", on="time").mean()
+        df.reset_index(inplace=True)
     fig = px.line(
-        resample_df,
+        df,
         x="time",
         y="heartRate",
         color="watchId",
+        labels={
+            "time": "Time (S)",
+            "heartRate": "Heart Rate (BPM)",
+            "watchId": "Watch ID",
+        },
+        title="Raw Data",
     )
     fig.update_traces(marker_size=3)
-    fig.update_layout(showlegend=False)
+    fig.update_layout(showlegend=True)
     fig.write_image(dir_fig_out + "fig_raw_data.svg")
     return fig
 
