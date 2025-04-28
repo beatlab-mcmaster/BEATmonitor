@@ -85,5 +85,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ## Citation
 
+[![DOI](https://zenodo.org/badge/854785604.svg)](https://doi.org/10.5281/zenodo.15297806)
+
 This repository contains a [CITATION.cff](/CITATION.cff) file.
 If you use this project, please cite it using the information in the file or use the "Cite this repository" button on GitHub for citation info.
