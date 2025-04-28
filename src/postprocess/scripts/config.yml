@@ -23,6 +23,7 @@ pipelines:
 
 reporting:
   plot_template: plotly_dark # Choose a plotly theme for all plots
+  plot_max_samples: 60000 # Maximum number of samples to plot; data are downsampled if above this number
   colors: # Specifiy a consistent color template TODO:
     - "#648FFF"
     - "#785EF0"
