@@ -39,3 +39,6 @@ license: GPL-3.0
 commit: Revision 250427
 version: v0.2.250427
 date-released: '2025-04-27'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.15297806
