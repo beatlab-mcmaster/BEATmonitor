@@ -1,6 +1,14 @@
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+
+
+# Datashader
+# import xarray as xr
+import datashader as ds
+import datashader.transfer_functions as tf
+import datashader.utils as utils
 
 
 def plotly_data(df, config_dat):
@@ -12,7 +20,7 @@ def plotly_data(df, config_dat):
         sample_rate = round(len(df) / config_dat["reporting"]["plot_max_samples"])
         print(f"Resampling raw data to {sample_rate} seconds")  # TODO: ms?
         df = df.groupby("watchId").resample(f"{sample_rate}s", on="time").mean()
-        df.reset_index(inplace=True)
+    df.reset_index(inplace=True)
     fig = px.line(
         df,
         x="time",
@@ -29,12 +37,6 @@ def plotly_data(df, config_dat):
     fig.update_layout(showlegend=True)
     fig.write_image(dir_fig_out + "fig_raw_data.svg")
     return fig
-
-
-# Datashader
-import xarray as xr
-import datashader as ds
-import datashader.transfer_functions as tf
 
 
 def get_ds_aggs(df, name_y, h=1500, w=4000):
@@ -62,4 +64,4 @@ def plot_raw_individual_watches(df, config_dat, value="heartRate"):
     df_agg = get_ds_aggs(df, value)
     for w in df_agg.keys():
         img = tf.shade(df_agg[w])
-        ds.utils.export_image(img, dir_fig_out + f"fig_raw_{value}_{w}")
+        utils.export_image(img, dir_fig_out + f"fig_raw_{value}_{w}")
