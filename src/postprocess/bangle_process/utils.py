@@ -9,10 +9,12 @@ def load_config(file_name, print_config=False):
     """Load the specified configuration file for script"""
     with open(file_name, "r") as file:
         dat = yaml.safe_load(file)
-        dat["timezone"] = pytz.timezone(dat["timezone"])
         if print_config:
-            print("Analyses will be run with the following settings:")
+            print(
+                f"Analyses will be run with the following settings in '{file_name}':\n"
+            )
             print(yaml.dump(dat))
+        dat["timezone"] = pytz.timezone(dat["timezone"])
         return dat
 
 
