@@ -1,8 +1,18 @@
 import yaml
 import os
+import sys
 import re
 import pytz
 from flatten_dict import flatten
+
+
+def print_env_info():
+    """Print information about the current environment"""
+    print(
+        f"Python executable:\n>> {sys.executable}"
+    )  # Verify conda environment is active
+    print(f"Python version:\n>> {sys.version}")
+    print(f"Current working directory:\n>> {os.getcwd()}")
 
 
 def load_config(file_name, print_config=False):
