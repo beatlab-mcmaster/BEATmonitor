@@ -1,0 +1,106 @@
+---
+title: "Learders' Debate Analysis"
+subtitle: "Preprocessing cardiac data"
+author: "Maya B. Flannery"
+toc: true
+date: today
+---
+
+# Setup
+
+Before running this script, ensure you have follwed the 
+[instructions](https://github.com/beatlab-mcmaster/BEATmonitor/tree/main/src/postprocess) 
+to install Conda and the python environment for the BEATmonitor project.
+
+Next, note the default folder configuration for the analysis:
+
+```{raw}
+BEATmonitor/src/postprocess/
+|- bangle_process/
+|  |- ...
+|- data/
+|  |- __raw/
+|  |- processed/
+|- results/
+|  |- figures/
+|  |- summary/
+|  |- tables/
+|- config.yml
+|- 01-preprocess.py
+|- 01-preprocess.qmd
+|- run-analysis.sh
+```
+
+Raw watch data files should be located in the `data/__raw/` folder formatted similar to:
+
+- `02-20_time_20-40-42_50c6_W001.csv`
+
+Processed data will be saved to `data/processed/` in `.parquet` format.
+
+::: {.callout-note}
+For now, in the `BEATmonitor/src/postprocess/` folder, create `data/__raw/` and
+copy your raw watch files there.
+:::
+
+## Compute data
+
+The following script activates the Python environment and runs the preprocessing 
+script to compute the cardiac data from the raw watch files. Figures in `html` format
+are also greated in the `results/figures/` folder.
+
+::: {.callout-tip}
+Configure processing parameters in the `config.yml` file, such as the sampling 
+rate, start/end times, exclusion criteria, etc.
+:::
+
+```{python}
+#| label: "compute-data-from-raw"
+#| eval: true
+!./run-analysis.sh
+```
+
+The script should log and output the creation of directories, checking and reading
+raw watch files, saving processed data, and generating and saving raw data figures.
+
+# Analysis
+
+Now the processed data can be analyzed.
+
+## Load libraries
+
+First load the helpful libraries and the configuration file.
+
+```{python}
+#| label: "load-libraries"
+import pandas as pd
+from bangle_process import data_access, utils, reporting, pipelines
+utils.print_env_info()
+cfg = utils.load_config('config.yml')
+```
+
+## Load data
+
+Now we load a processed data file. 
+
+```{python}
+#| label: read-data
+df = pd.read_parquet('data/processed/raw_data_trimmed.parquet')
+df.reset_index(inplace=True)
+df.head()
+```
+
+## Visualization
+
+Create plots of the raw heartrate time-series and confidence values.
+
+```{python}
+#| label: test-plot-HR
+reporting.plot_hv(df, name_y=['heartRate', 'confidence'], config_dat=cfg)
+```
+
+::: {.callout-note}
+These figures are saved in the `results/figures/` folder as `html` files.
+:::
+
+
+
