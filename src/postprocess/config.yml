@@ -1,0 +1,31 @@
+project_dir: analysis # Currently unused
+
+timezone: America/Toronto # The timezone of data collection
+
+directories:
+  data:
+    raw: data/__raw/ # Raw data directory
+    processed: data/processed/ # Optional, processed data stored here
+    summary: results/summary/ # Data summary csv files stored here
+  figures: results/figures/ # Output directory for figures
+  tables: results/tables/ # Output directory for tables
+
+access_data:
+  minimum_record_length: 6000 # Optional, data under this duration (seconds) will be excluded
+  minimum_sample_rate: 20 # Optional, data under this average sample rate (samples per second) will be excluded
+  trim_data_before: 2025-04-17 23:00:00.0 # Optional, data before this time are excluded
+  trim_data_after: 2025-04-18 01:00:00.0 # Optional, data after this time are excluded
+
+pipelines:
+  HR_resample_rate: 1000 # The resample rate in ms for processing HR data
+  PPG_resample_rate: 25 # The resample rate in ms for processing PPG data
+  interpolation_rate: 1 # In ms; preliminary step for resampling PPG data (quality degrades if set higher than 1)
+
+reporting:
+  plot_template: plotly_dark # Choose a plotly theme for all plots
+  plot_max_samples: 60000 # Maximum number of samples to plot; data are downsampled if above this number
+  colors: # Specifiy a consistent color template TODO:
+    - "#648FFF"
+    - "#785EF0"
+    - "#FE6100"
+    - "#FFB000"
