@@ -8,7 +8,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("processing.log"),
-        # logging.StreamHandler(),  # Also logs to console
+        logging.StreamHandler(),  # Also logs to console
     ],
 )
 
