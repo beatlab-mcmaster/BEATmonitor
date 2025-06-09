@@ -10,7 +10,7 @@ const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
 
 // Change default BT advertisement
-NRF.setAdvertising({}, { name: `BEAT ${shortMAC}` });
+NRF.setAdvertising({}, { name: `BEATwatch ${shortMAC}` });
 
 let infoPhysicalID = (function () {
   try {
@@ -28,7 +28,7 @@ var data;
 // Timestamp is set on record
 var startTimestamp;
 
-let getFileData = function () {
+function getFileData() {
   let dt = new Date(Date.now());
   let shortDate = `${dt.toISOString().slice(5, 19)}`;
   let file = {
@@ -40,9 +40,9 @@ let getFileData = function () {
     },
   };
   return file;
-};
+}
 
-let getMetaData = function (state) {
+function getMetaData(state) {
   let dt = new Date(Date.now());
   let data = {
     Record: {
@@ -55,7 +55,7 @@ let getMetaData = function (state) {
     },
   };
   return data;
-};
+}
 
 // ---------------------------- User Interface --------------------------------
 let drawTimeout;
@@ -67,7 +67,7 @@ const drawTouch = {
 };
 
 // Draw the watch face
-let draw = function () {
+function draw() {
   g.clear();
   g.setColor(0, 0, 0);
   // Write time -- only update every minute
@@ -120,7 +120,7 @@ let draw = function () {
     },
     60000 - (Date.now() % 60000),
   );
-};
+}
 
 // Respond to touch events...
 Bangle.on("touch", (button, xy) => {
@@ -155,7 +155,7 @@ setWatch(
 
 // ---------------------------- Record to watch -------------------------------
 // Button controls
-let startRecord = function () {
+function startRecord() {
   if (state == "WAIT") {
     state = "START_RECORD";
     console.log("Starting record");
@@ -178,9 +178,9 @@ let startRecord = function () {
   } else {
     console.log("Not ready to start record");
   }
-};
+}
 
-let stopRecord = function () {
+function stopRecord() {
   if (state == "RECORDING") {
     state = "STOP_RECORD";
     console.log("Stopping record");
@@ -200,10 +200,10 @@ let stopRecord = function () {
   } else {
     console.log("No record to stop");
   }
-};
+}
 
 // ---------------------------- Send data stream ------------------------------
-let startStreaming = function () {
+function startStreaming() {
   if (state == "WAIT") {
     state = "START_STREAM";
     console.log("Starting stream");
@@ -216,9 +216,9 @@ let startStreaming = function () {
   } else {
     console.log("Not ready to stream");
   }
-};
+}
 
-let stopStreaming = function () {
+function stopStreaming() {
   if ((state = "STREAMING")) {
     state = "STOP_STREAM";
     console.log("Stopping stream");
@@ -233,18 +233,18 @@ let stopStreaming = function () {
   } else {
     console.log("No stream to stop");
   }
-};
+}
 
 // ---------------------------- Configure watch id ----------------------------
-let sendWatchId = function () {
+function sendWatchId() {
   if (state == "WAIT") {
     print(`${infoPhysicalID}`);
   } else {
     print("[INFO] Watch is busy, cannot send ID");
   }
-};
+}
 
-let setWatchId = function (watchID) {
+function setWatchId(watchID) {
   if (state == "WAIT" && watchID != undefined) {
     let info = {
       PhysicalID: watchID,
@@ -257,10 +257,10 @@ let setWatchId = function (watchID) {
   } else {
     print("[INFO] Watch is busy, cannot set ID!");
   }
-};
+}
 
 // ----------------------- Storage management / transfer ----------------------
-let sendStorage = function () {
+function sendStorage() {
   if (state == "WAIT") {
     let files = { files: [] };
     let storageFiles = storage.list(/(_W...)|(\.csv)/); // TODO: Allow for any watchname
@@ -276,9 +276,9 @@ let sendStorage = function () {
   } else {
     print("[INFO] Watch is busy, cannot send storage!");
   }
-};
+}
 
-let deleteStorage = function (files) {
+function deleteStorage(files) {
   if (state == "WAIT") {
     if (files === undefined) {
       print("[INFO] No files to delete are specified!");
@@ -295,9 +295,9 @@ let deleteStorage = function (files) {
   } else {
     print("[INFO] Watch is busy, cannot delete file(s)!");
   }
-};
+}
 
-let sendData = function (fileName) {
+function sendData(fileName) {
   if (state == "WAIT") {
     state = "SENDING";
     setNRF(2);
@@ -333,10 +333,10 @@ let sendData = function (fileName) {
   } else {
     print("[INFO] Watch is busy, cannot send data!");
   }
-};
+}
 
 // ---------------------------- Broadcast watch state -------------------------
-let setNRF = function (val) {
+function setNRF(val) {
   NRF.setAdvertising(
     {},
     {
@@ -344,25 +344,25 @@ let setNRF = function (val) {
       manufacturerData: JSON.stringify({ s: val }),
     },
   );
-};
+}
 
 // ---------------------------- Time sync / drift -----------------------------
-let syncTime = function (time) {
+function syncTime(time) {
   setTime(time);
   Bluetooth.println(getTime());
-};
+}
 
-let getDrift = function (serverTime) {
+function getDrift(serverTime) {
   let watchTime = getTime();
   Bluetooth.println(watchTime);
-};
+}
 
 // ---------------------------- Vibration -------------------------------------
-let setVibrate = function (time, strength) {
+function setVibrate(time, strength) {
   Bangle.buzz(time, strength).then(() => {
     print("[INFO] Vibration done");
   });
-};
+}
 
 // ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
@@ -371,7 +371,7 @@ let setVibrate = function (time, strength) {
 
 var prevWriteTimestamp = 0;
 // This function will be called continuously while setHRMpower is on
-let getHR = function (hrm) {
+function getHR(hrm) {
   let now = Date.now();
   let diff = Math.round(now - prevWriteTimestamp);
 
@@ -413,7 +413,7 @@ let getHR = function (hrm) {
     hrmCollected++;
     prevWriteTimestamp = now;
   }
-};
+}
 
 // ---------------------------- Record Acceleration ---------------------------
 
