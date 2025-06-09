@@ -1,16 +1,16 @@
-// BEATmonitor -- v0.051
+// BEATmonitor -- v0.051a
 // Load storage module
 const storage = require("Storage");
 
 // Get device information
-const infoProgram = "BEATmonitor";
-const infoVersion = "v0.051";
+const infoProgram = "BEATwatch";
+const infoVersion = "v0.051a";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
 
 // Change default BT advertisement
-NRF.setAdvertising({}, { name: `BEATLab ${shortMAC}` });
+NRF.setAdvertising({}, { name: `BEAT ${shortMAC}` });
 
 let infoPhysicalID = (function () {
   try {
@@ -21,7 +21,8 @@ let infoPhysicalID = (function () {
 })();
 
 var state = "WAIT";
-var samplesCollected = 0;
+var hrmCollected = 0;
+var accelCollected = 0;
 var metaData;
 var data;
 // Timestamp is set on record
@@ -50,7 +51,7 @@ let getMetaData = function (state) {
       UNIXTimeStamp: dt,
       BatteryLife: E.getBattery(),
       FreeStorage: storage.getFree(),
-      SamplesWritten: samplesCollected,
+      SamplesWritten: { hrm: hrmCollected, accel: accelCollected },
     },
   };
   return data;
@@ -97,7 +98,7 @@ let draw = function () {
 
   // Draw the number of samples collected in record
   g.drawString(
-    `Samples:\n${samplesCollected}`,
+    `Samples:\n${hrmCollected + accelCollected}`,
     drawTouch.x1 + 5,
     drawTouch.y1 + 25,
   );
@@ -191,7 +192,8 @@ let stopRecord = function () {
     // Reset record
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
-    samplesCollected = 0;
+    hrmCollected = 0;
+    accelCollected = 0;
     state = "WAIT";
     setNRF(0);
     draw();
@@ -223,7 +225,8 @@ let stopStreaming = function () {
 
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
-    samplesCollected = 0;
+    hrmCollected = 0;
+    accelCollected = 0;
     state = "WAIT";
     setNRF(0);
     draw();
@@ -407,14 +410,36 @@ let getHR = function (hrm) {
 
       Bluetooth.println(d.buffer);
     }
-    samplesCollected++;
+    hrmCollected++;
     prevWriteTimestamp = now;
   }
 };
 
+// ---------------------------- Record Acceleration ---------------------------
+
+function procAccel(xyz) {
+  if (state == "RECORDING") {
+    let ts = Math.round(Date.now() - startTimestamp);
+    let obs = [
+      ts,
+      Math.round(xyz.x * 1000),
+      Math.round(xyz.y * 1000),
+      Math.round(xyz.z * 1000),
+      Math.round(xyz.mag * 1000),
+      Math.round(xyz.diff * 1000),
+    ].join(",");
+    data.write("A" + obs + "\n");
+    accelCollected++;
+    // console.log(obs);
+  }
+}
+
 // ---------------------------- Initial function calls ------------------------
 // Listen for HRM values
 Bangle.on("HRM-raw", getHR);
+
+// Listen for accelerometer values
+Bangle.on("accel", procAccel);
 
 // Call first draw to screen
 g.reset();

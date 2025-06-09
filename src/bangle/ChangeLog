@@ -4,3 +4,5 @@
 0.031: Timestamps updated to write time from start of record
 0.04: Application updated for general relase; renamed to BEATmonitor
 0.05: Add vibrations and streaming function
+0.051: Change sendStorage function to include file sizes
+0.051a: Records acceleration (x, y, x, magnitude, difference)
