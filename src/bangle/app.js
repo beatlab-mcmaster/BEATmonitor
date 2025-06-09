@@ -4,7 +4,7 @@ const storage = require("Storage");
 
 // Get device information
 const infoProgram = "BEATwatch";
-const infoVersion = "v0.051a";
+const infoVersion = "v0.052";
 const infoSerial = process.env.SERIAL;
 const infoMAC = NRF.getAddress();
 const shortMAC = infoMAC.slice(-5).replace(":", "");
