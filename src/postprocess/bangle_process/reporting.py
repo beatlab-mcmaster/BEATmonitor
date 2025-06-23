@@ -1,3 +1,5 @@
+from . import utils
+
 import plotly.express as px
 
 # import plotly.graph_objects as go
@@ -7,14 +9,16 @@ import plotly.express as px
 # Datashader
 # import xarray as xr
 import holoviews as hv
-from holoviews import opts
+
+# from holoviews import opts
 import datashader as ds
-from holoviews.operation.datashader import datashade
+
+# from holoviews.operation.datashader import datashade
 from bokeh.models import DatetimeTickFormatter
 
 # from bokeh.io.export import export_svgs
 import datashader.transfer_functions as tf
-import datashader.utils as utils
+import datashader.utils as dsutils
 
 hv.extension("bokeh")
 
@@ -22,10 +26,12 @@ hv.extension("bokeh")
 
 
 def plot_hv(df, name_y, config_dat, confidence_threshold=5, h=400, w=1000):
+    """TODO: Plotting function for detailed visualization of raw data."""
+    # TODO: Filtering by confidence threshold might be useful
     if not isinstance(name_y, list):
         name_y = [name_y]
 
-    print(f"Plotting {name_y} with Holoviews")
+    utils.logging.info(f"Plotting {name_y} with Holoviews")
 
     dir_fig_out = config_dat["directories"]["figures"]
     d = df.copy()
@@ -88,6 +94,7 @@ def plot_hv(df, name_y, config_dat, confidence_threshold=5, h=400, w=1000):
         filename = f"{dir_fig_out}fig_raw_{'_'.join(flat_names)}_{watch_id}.html"
         hv.save(layout, filename)
 
+        # Plotting SVGs
         # bokeh_fig = hv.renderer("bokeh").get_plot(overlay).state
         # bokeh_fig.output_backend = "svg"
         # export_svgs(
@@ -116,21 +123,27 @@ def get_ds_aggs(df, name_y, h=1500, w=4000):
 
 
 def plot_raw_individual_watches(df, config_dat, value="heartRate"):
+    utils.logging.info(f"Plotting raw individual watch data [{value}]:")
     dir_fig_out = config_dat["directories"]["figures"]
     df_agg = get_ds_aggs(df, value)
     for w in df_agg.keys():
         img = tf.shade(df_agg[w])
-        utils.export_image(img, dir_fig_out + f"fig_raw_{value}_{w}")
+        utils.logging.info(f" - Saving figure for watch {w}")
+        dsutils.export_image(img, dir_fig_out + f"fig_raw_{value}_{w}")
 
 
 def plotly_data(df, config_dat):
     """Summarize all raw data with plotly"""
     dir_fig_out = config_dat["directories"]["figures"]
+
+    utils.logging.info("Plotting all raw data with Plotly:")
     # Downsample dataframe
     if len(df) > config_dat["reporting"]["plot_max_samples"]:
         # Calculate sample rate
         sample_rate = round(len(df) / config_dat["reporting"]["plot_max_samples"])
-        print(f"Resampling raw data to {sample_rate} seconds")  # TODO: ms?
+        utils.logging.info(
+            f" - Resampling raw data to {sample_rate} seconds (reduce figure to reasonable size)"
+        )  # TODO: ms?
         df = df.groupby("watchId").resample(f"{sample_rate}s", on="time").mean()
     df.reset_index(inplace=True)
     fig = px.line(
@@ -147,5 +160,6 @@ def plotly_data(df, config_dat):
     )
     fig.update_traces(marker_size=3)
     fig.update_layout(showlegend=True)
+    utils.logging.info(" - Saving figure as SVG")
     fig.write_image(dir_fig_out + "fig_raw_data.svg")
     return fig

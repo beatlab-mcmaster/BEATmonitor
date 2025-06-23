@@ -1,5 +1,6 @@
 # TODO: import pandas for all files?
 import os
+from . import utils
 import pandas as pd
 import neurokit2 as nk
 
@@ -8,7 +9,7 @@ def resample_HR(df, config_dat, save_data=False):
     resample_rate = config_dat["pipelines"]["HR_resample_rate"]
     df_dir_out = config_dat["directories"]["data"]["processed"]
     exclude_cols = ["timeFromStart", "ppgRaw", "ppgFilter", "timeDifference"]
-    print(f"Resampling data at: {resample_rate}ms")
+    utils.logging.info(f"Resampling data at: {resample_rate}ms")
     df.set_index("time", inplace=True)
     df_out = (
         df.drop(exclude_cols, axis=1)
@@ -26,16 +27,19 @@ def resample_HR(df, config_dat, save_data=False):
 def resample_PPG(df, config_dat, save_data=False):
     resample_rate = config_dat["pipelines"]["PPG_resample_rate"]
     interpolation_rate = config_dat["pipelines"]["interpolation_rate"]
+    utils.logging.info("Resample PPG:")
     saved_data = (
         config_dat["directories"]["data"]["processed"]
         + f"resampled_PPG_{resample_rate}ms.parquet"
     )
     if os.path.isfile(saved_data):
-        print(f"Using previously computed resampled data from {saved_data}")
+        utils.logging.info(
+            f" - Using previously computed resampled data from {saved_data}"
+        )
         df_out = pd.read_parquet(saved_data)
     else:
-        print(
-            f"Resampling data at: {resample_rate}ms [{interpolation_rate}ms interpolation]"
+        utils.logging.info(
+            f" - Resampling data at: {resample_rate}ms [{interpolation_rate}ms interpolation]"
         )
         df.set_index("time", inplace=True)  # TODO: fix need to reset index
         df_out = (
@@ -51,22 +55,23 @@ def resample_PPG(df, config_dat, save_data=False):
             .reset_index(level=0)  # ungroup again
         )
         if save_data:
-            print(f"Saving resampled PPG data to {saved_data}")
+            utils.logging.info(f" >> Saving resampled PPG data to {saved_data}")
             df_out.to_parquet(saved_data)
     return df_out
 
 
 def PPG_find_peaks(df, config_dat, save_data=False):
+    utils.logging.info("Find peaks from PPG:")
     sample_rate = config_dat["pipelines"]["PPG_resample_rate"]
     saved_data = (
         config_dat["directories"]["data"]["processed"]
         + f"peaks_{sample_rate}ms.parquet"
     )
     if os.path.isfile(saved_data):
-        print(f"Using previously computed peaks data from {saved_data}")
+        utils.logging.info(f" - Using previously computed peaks data from {saved_data}")
         df_out = pd.read_parquet(saved_data)
     else:
-        print("Calculating peaks")
+        utils.logging.info("Calculating peaks")
         frequency = 1000 / sample_rate  # in Hz (samples/second)
         df_out = pd.DataFrame()
         for i, g in df.groupby("watchId"):
@@ -74,6 +79,6 @@ def PPG_find_peaks(df, config_dat, save_data=False):
             g = g.join(sig.set_index(g.index))
             df_out = pd.concat([df_out, g])
         if save_data:
-            print(f"Saving peaks data to {saved_data}")
+            utils.logging.info(f" >> Saving peaks data to {saved_data}")
             df_out.to_parquet(saved_data)
     return df_out
