@@ -9,14 +9,12 @@ def main(force_all: bool = False, config: str = "config.yml", logging: str = "in
     files; raw data are read, resampled, and saved as parquet
     files; PPG peaks are detected and saved as a parquet file."""
 
+    utils.logging.info("==================== STARTING ANALYSIS ====================")
+
     utils.print_env_info()
 
-    if force_all:
-        # TODO : Add force option
-        print("Forcing reprocessing of all data.")
-
     # Load our configuration file
-    cfg = utils.load_config(config, print_config=True)
+    cfg = utils.load_config(config)
 
     # Initialize directories
     utils.init_directories(cfg)
@@ -39,24 +37,23 @@ def main(force_all: bool = False, config: str = "config.yml", logging: str = "in
         raw_data_full, cfg, save_data=True
     )
 
-    if force_all:
-        print(
-            "Forcing Visualization of all data."
-        )  # TODO: Add force option to functions
-        # Visualization
-        reporting.plotly_data(raw_data_trimmed, cfg)
+    reporting.plotly_data(raw_data_trimmed, cfg)
 
-        # Plot heartRate by default
-        reporting.plot_raw_individual_watches(raw_data_trimmed, cfg)
+    # Plot heartRate by default
+    reporting.plot_raw_individual_watches(raw_data_trimmed, cfg)
 
-        # Plot ppgRaw
-        reporting.plot_raw_individual_watches(raw_data_trimmed, cfg, value="ppgRaw")
+    # Plot ppgRaw
+    reporting.plot_raw_individual_watches(raw_data_trimmed, cfg, value="ppgRaw")
 
     # PPG
     ## Resample PPG data and save to file
     pipelines.resample_PPG(raw_data_trimmed, cfg, save_data=True)
     ## Find PPG peaks and save to file
     pipelines.PPG_find_peaks(raw_data_trimmed, cfg, save_data=True)
+
+    utils.logging.info(
+        "==================== ANALYSIS COMPLETE ====================\n\n\n"
+    )
 
 
 if __name__ == "__main__":

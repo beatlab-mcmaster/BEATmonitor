@@ -1,6 +1,6 @@
 ---
-title: "Learders' Debate Analysis"
-subtitle: "Preprocessing cardiac data"
+title: "Cardiac Methods"
+subtitle: "Bangle.js 2 postprocessing / cardiac preprocessing"
 author: "Maya B. Flannery"
 toc: true
 date: today
@@ -14,7 +14,7 @@ to install Conda and the python environment for the BEATmonitor project.
 
 Next, note the default folder configuration for the analysis:
 
-```{raw}
+```{quote}
 BEATmonitor/src/postprocess/
 |- bangle_process/
 |  |- ...
@@ -83,10 +83,17 @@ cfg = utils.load_config('config.yml')
 Now we load a processed data file. 
 
 ```{python}
-#| label: read-data
-df = pd.read_parquet('data/processed/raw_data_trimmed.parquet')
-df.reset_index(inplace=True)
-df.head()
+#| label: read-data-resampled
+df_resampled = pd.read_parquet('data/processed/resampled_PPG_25ms.parquet')
+df_resampled.reset_index(inplace=True)
+df_resampled.head()
+```
+
+```{python}
+#| label: read-data-peaks
+df_peaks = pd.read_parquet('data/processed/peaks_25ms.parquet')
+df_peaks.reset_index(inplace=True)
+df_peaks.head()
 ```
 
 ## Visualization
@@ -95,7 +102,7 @@ Create plots of the raw heartrate time-series and confidence values.
 
 ```{python}
 #| label: test-plot-HR
-reporting.plot_hv(df, name_y=['heartRate', 'confidence'], config_dat=cfg)
+reporting.plot_hv(df_resampled, name_y=['heartRate', 'confidence'], config_dat=cfg)
 ```
 
 ::: {.callout-note}
@@ -103,4 +110,25 @@ These figures are saved in the `results/figures/` folder as `html` files.
 :::
 
 
+# Subsetting time periods 
 
+
+```{python}
+#| label: subsetting-periods-resampled
+# Example of selecting a period of interest from resampled data
+df_period_01 = data_access.select_period(
+    df_resampled, "2024-11-15 20:20:00.000", "2024-11-15 20:30:00.000", cfg
+)
+df_period_01.head()
+```
+
+
+
+```{python}
+#| label: subsetting-periods-peaks
+# Exampled of selecting a period of interest with PPG peaks
+df_period_02 = data_access.select_period(
+    df_peaks, "2024-11-15 20:40:00.000", "2024-11-15 20:50:00.000", cfg
+)
+df_period_02.head()
+```
