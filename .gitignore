@@ -9,9 +9,13 @@ src/dashboard/public/javascripts/*
 # - server logs
 **/logs/*
 # - project watch data
-**/watchData/watchList/*
+**/watchData/watch*/*
 **/watchData/transferredData/*
 **/watchData/filesOnDevice/*
+# - data files
+**/data/**
+# - results
+**/results/**
 
 # Quarto render files
 **/*_files/*
