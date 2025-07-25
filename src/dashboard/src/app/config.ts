@@ -12,7 +12,7 @@ const __dirname = join(dirname(fileURLToPath(import.meta.url)), "../");
 
 const settings = {
   // Add new devices to the experiment (true) or limit to previously set devices (false)
-  allowNewDevices: false,
+  allowNewDevices: true,
   // Directory settings
   directory: {
     // .json files are created when Bangle.js watches are found
