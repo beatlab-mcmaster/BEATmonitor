@@ -101,6 +101,7 @@ noble.on("discover", async function (dev) {
   // We are only interested in Bangle.js devices
   if (
     nearbyDevice.startsWith("Bangle.js") ||
+    nearbyDevice.startsWith("BEATwatch") ||
     nearbyDevice.startsWith("BEATLab")
   ) {
     if (knownWatches.has(nearbyDevice)) {
