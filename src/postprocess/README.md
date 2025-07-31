@@ -11,8 +11,8 @@ The example postprocessing template/tutorial provides a step by step walk throug
 ## Installation
 
 We have set up a python environment for running this process.
-If you do not have Conda installed, following the installation instructions.
-Otherwise, navigate to the `postprocess` folder in this repository and run the command in **Initialize environment**.
+If you do not have Conda installed, follow the installation instructions.
+Otherwise, navigate to the `src/postprocess` folder in this repository and run the command in [Initialize environment](#initialize-environment).
 
 ### Install Conda
 
@@ -38,10 +38,11 @@ For reference:
 ```bash
 conda activate bangle_post_processing
 ```
+You will know you have successfully activated the environment when you see `(bangle_post_processing)` at the start of your terminal prompt.
 
-## Template example/tutorial
+## Template tutorial
 
-Once the environment is activated, the tutorial script can be run in Jupyter Lab:
+Once the environment is activated, you can step through an example tutorial script in Jupyter Lab. First launch Jupyter Lab by running the following command in the terminal:
 
 ```bash
 jupyter lab
@@ -58,6 +59,7 @@ Follow the instructions in the notebook: `postprocessing_template.ipynb`
 ### Coding
 
 Guide to convert [Jupyter notebooks to Python](https://linuxhaxor.net/code/convert-jupyter-notebook-python.html)
+
 Guide to [Python project setup](https://goodresearch.dev/setup)
 
 ## Dependencies
