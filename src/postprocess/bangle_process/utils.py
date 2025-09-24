@@ -6,14 +6,38 @@ import logging
 from flatten_dict import flatten
 
 
+# --- ANSI color codes ---
+RESET = "\x1b[0m"
+COLORS = {
+    logging.DEBUG: "\x1b[38;20m",  # grey
+    logging.INFO: "\x1b[37;20m",  # white
+    logging.WARNING: "\x1b[33;20m",  # yellow
+    logging.ERROR: "\x1b[31;20m",  # red
+    logging.CRITICAL: "\x1b[31;1m",  # bold red
+}
+
+
+class ColorFormatter(logging.Formatter):
+    def format(self, record):
+        log_fmt = f"{COLORS.get(record.levelno, RESET)}%(asctime)s [%(levelname)s] %(message)s{RESET}"
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+
+# --- Handlers ---
+file_handler = logging.FileHandler("analysis.log")
+file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(ColorFormatter())
+
+# --- Logger setup ---
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("analysis.log"),
-        logging.StreamHandler(),  # Also logs to console
-    ],
+    handlers=[file_handler, console_handler],
 )
+
+logger = logging.getLogger(__name__)
 
 
 def print_env_info():
@@ -43,3 +67,14 @@ def init_directories(config_dat):
             # TODO: safer method?
             logging.info(f" - Creating directory: {d}")
             os.makedirs(d, exist_ok=True)
+
+
+def check_existing(file_name):
+    """Check for existing file"""
+    is_found = False
+    if os.path.isfile(file_name):
+        logging.info(f" - {file_name} already exists, skipping processing")
+        is_found = True
+    else:
+        logging.info(f" - {file_name} does not exist, processing...")
+    return is_found
