@@ -1,0 +1,335 @@
+---
+title: "Preprocessing Tutorial"
+subtitle: "Heart Rate & Acceleration"
+author: "Maya B. Flannery"
+format: html
+editor: visual
+---
+
+## About
+
+This tutorial will show you the steps required to read heart rate (HR) and acceleration (AC) data transferred from Bangle.js 2 smart watches running the [BEATwatch](https://github.com/beatlab-mcmaster/BEATmonitor/tree/main/src/bangle#description "Link to BEATwatch application") application. We have written a Python module to perform reading, parsing, and initial preprocessing of data so they are standardized for subsequent analyses.
+
+### Prerequisites
+
+1.  You have installed the [BEATwatch](https://github.com/beatlab-mcmaster/BEATmonitor/tree/main/src/bangle#description "Link to BEATwatch application") application on a Bangle.js 2 smart watch.
+2.  You have installed the [BEATmonitor](https://github.com/beatlab-mcmaster/BEATmonitor/tree/main/src/dashboard#readme "Link to BEATmonitor dashboard") dashboard on your computer.
+3.  You have recorded data with the BEATwatch app (either [manually](https://github.com/beatlab-mcmaster/BEATmonitor/tree/main/src/bangle#using-the-beatmonitor-app "Link to manual operating instructions") or with the [dashboard](https://github.com/beatlab-mcmaster/BEATmonitor/blob/main/src/dashboard/README.md#usage "Link to dashboard instructions")).
+4.  You have [transferred](https://github.com/beatlab-mcmaster/BEATmonitor/blob/main/src/dashboard/README.md#7-transfer-recordings "Link to transfer instructions") raw watch data using the dashboard.
+
+::: callout-note
+## Note:
+
+The initial processing steps are introduced here in Python. However, the results of this processing script are saved in `csv` format, and can be read and analysed using other languages/software.
+:::
+
+By default, transferred data from the BEATmonitor dashboard are saved in `BEATmonitor/src/dashboard/watchData/transferredData/`
+
+## Reading files
+
+### Setup and configuration
+
+Set the working directory to this notebook's location (`BEATmonitor/src/postprocess/scripts/`)
+
+```{python}
+#| output: false
+import sys
+import pandas as pd
+import matplotlib.pyplot as plt
+sys.path.append("..")  # Allow imports from project directory
+from bangle_process import data_access, utils, pipelines
+
+utils.print_env_info() # Print environment information (check that it is activated)
+```
+
+If you are not working with the default directories, provide paths to the directory containing raw data, and to where processed data should be stored in `example_config.yml` (directory paths are relative to working directory).
+
+For this example, raw data are located in `BEATmonitor/src/postprocess/scripts/example_data/raw`
+
+::: callout-note
+## Note:
+
+Since this script is located in the `scripts` directory, the configured path is `example_data/raw`.
+:::
+
+### Load the configuration:
+
+This will read in your configuration for use in subsequent processing functions.
+
+```{python}
+cfg = utils.load_config("example_config.yml")
+```
+
+### Initialize directories:
+
+This will create directories to store the output of this analysis.
+
+```{python}
+utils.init_directories(cfg)
+```
+
+### Get file summaries
+
+File summaries list:
+
+-   The watch ids of each file in the raw data directory
+
+-   The file name
+
+-   The watch's device MAC address
+
+-   The record's start time
+
+-   The record's end time
+
+-   The duration of the recording
+
+-   The number of HR samples
+
+-   The number of AC samples
+
+To scan all files in the raw data directory:
+
+```{python}
+file_summary = data_access.summarise_files_in_directory(cfg)
+```
+
+Optionally, view file metadata in RStudio:
+
+```{python}
+# View(file_summary) # Uncomment to view in RStudio
+```
+
+```{python}
+file_summary.head()
+```
+
+The summary is also output as a csv file to `BEATmonitor/src/postprocess/scripts/example_results/summary/files_watch_summary.csv`
+
+### Flag bad records
+
+TODO: Not yet implemented for acceleration data
+
+```{python}
+# flagged_data = data_access.flag_records(files_watch_summary, cfg)
+# files_watch_summary.drop(list(flagged_data.index), inplace=True)
+```
+
+### Read data
+
+Read all of the watch data by passing the `file_summary` along with the configuration (`cfg`) to `get_raw_watch_data()` (any flagged files that were dropped from the file_summary will be skipped).
+
+```{python}
+df_raw = data_access.get_raw_watch_data(file_summary, cfg)
+```
+
+Since the example watch files contain both heart rate and acceleration data, `df_raw` is a [tuple](https://pythonguides.com/tuples/ "What is a tuple?") with two [dataframes](https://pandas.pydata.org/pandas-docs/stable/getting_started/intro_tutorials/01_table_oriented.html# "What is a dataframe"):
+
+-   HR data are in `df_raw[0]`
+-   Acceleration data are in `df_raw[1]`
+
+```{python}
+df_raw_hr = df_raw[0]
+df_raw_accel = df_raw[1]
+```
+
+Here, we can see basic information about the raw data, including the column names, datatypes, and number of observations:
+
+```{python}
+df_raw_hr.info()
+```
+
+```{python}
+df_raw_accel.info()
+```
+
+### Data summaries
+
+Use [Pandas](https://pandas.pydata.org/docs/) to manipulate dataframes.
+
+Using `groupby()` and `describe()`, we can see detailed summaries of each watch:
+
+```{python}
+summary_raw_hr = df_raw_hr.groupby("watchId", observed=True).describe()
+summary_raw_hr.head()
+```
+
+```{python}
+summary_raw_accel = df_raw_accel.groupby("watchId", observed=True).describe()
+summary_raw_accel.head()
+```
+
+## Processing data
+
+### Cropping
+
+Specify a window of time using [ISO8601](https://en.wikipedia.org/wiki/ISO_8601 "What is ISO 8601 format?") format: `YYYY-MM-DD hh:mm:ss.sss`
+
+-   YYYY = Year
+
+-   MM = Month
+
+-   DD = Day
+
+-   hh = Hour
+
+-   mm = Minute
+
+-   ss = Second
+
+-   sss = Millisecond
+
+::: callout-note
+## Note:
+
+Do not include `Z`, or a timezone offset, in the formatted string. Instead, configure timezone in the configuration file (i.e., `example_config.yml`). The timezone will be added when cropping (this method throughout ensures that daylight savings time is also followed).
+:::
+
+```{python}
+timestamp = "2025-05-23 13:45:20.244"
+pd.to_datetime(timestamp) # A timezone 'unaware' timestamp is created
+```
+
+Create a start and stop timestamp to select data (from all watches) within that range:
+
+```{python}
+# A 60 second range (the example records are relatively short)
+start_timestamp = "2025-06-09 13:11:20.000"
+stop_timestamp = "2025-06-09 13:12:20.000"
+
+# Note that the configured timezone is added when selecting data
+df_select_accel = data_access.select_period(
+  df_raw_accel,
+  start_timestamp, 
+  stop_timestamp, 
+  cfg
+  )
+
+df_select_accel.head()
+```
+
+Similarly, we can select from the HR data:
+
+```{python}
+df_select_hr = data_access.select_period(
+  df_raw_hr,
+  start_timestamp, 
+  stop_timestamp, 
+  cfg
+  )
+
+df_select_hr.head()
+```
+
+In this example, only 1 watch has data within the specified range.
+
+### Resampling
+
+The raw data from the Bangle.js 2 heart rate sensor and accelerometer are not consistently sampled at an exact rate. The rate can fluctuate slightly from sample to sample, and sometimes samples are missed.
+
+For example, in the 60 seconds of HR data:
+
+```{python}
+df_select_hr.timeDifference.describe()
+df_select_hr.timeDifference.median()
+```
+
+```{python}
+bins = int(df_select_hr.timeDifference.max() - df_select_hr.timeDifference.min())
+plt.figure()
+plt.hist(df_select_hr.timeDifference, bins=bins, edgecolor="black", density=True)
+plt.xlabel("Sample rate (ms)")
+plt.ylabel("Frequency")
+plt.title("Sample Rate Distribution")
+plt.show()
+```
+
+Therefore, at minimum, we should resample the data to align to a constant grid.
+
+```{python}
+def resample_df(
+  df_in, downsample_rate=40, upsample_rate=1, simple=False, upsample=True, interpolate=True, downsample=True
+  ):
+    df = df_in.copy()
+    df.reset_index(inplace=True)
+    df.drop(['index'], axis=1, inplace=True)
+    df.set_index("time", inplace=True)
+    if upsample and interpolate and downsample:
+      # upsample: creates a time grid at upsample_rate milliseconds
+      # interpolate: fill in NAs created by upsampling
+      # downsample: create coarser time grid with mean of ohigh-res samples
+      print("Upsample, interpolate, downsample")
+      df_out = df.groupby("watchId", observed=True).apply(
+          lambda g: (
+              g.resample(f"{upsample_rate}ms")
+              .mean()
+              .interpolate(method="linear")
+              .resample(f"{downsample_rate}ms")
+              .first()
+          )
+      )
+    elif upsample and interpolate:
+      print("Upsample, interpolate")
+      df_out = df.groupby("watchId", observed=True).apply(
+          lambda g: (
+              g.resample(f"{upsample_rate}ms")
+              .mean()
+              .interpolate(method="linear")
+          )
+      )
+    elif upsample:
+      print("Upsample")
+      df_out = df.groupby("watchId", observed=True).apply(
+          lambda g: (
+              g.resample(f"{upsample_rate}ms")
+              .mean()
+          )
+      )
+    elif simple:
+      print("Simple")
+      df_out = df.groupby("watchId", observed=True).apply(
+          lambda g: (
+              g.resample(f"{downsample_rate}ms")
+              .last()
+          )
+      )
+    else:
+      print("No resampling completed")
+      df_out = df
+    return df_out.reset_index()
+  
+
+df_select_hr = data_access.select_period(
+  df_raw_hr,
+  pd.to_datetime("2025-06-09 13:11:40.000"),
+  pd.to_datetime("2025-06-09 13:11:42.000"),
+  cfg
+  )
+  
+# Pad with zeros, does this change shift in interpolation?
+df_ex_UID = resample_df(df_select_hr)
+df_ex_UI = resample_df(df_select_hr, downsample=False)
+df_ex_U = resample_df(df_select_hr, downsample=False, interpolate=False)
+df_ex_S = resample_df(df_select_hr, downsample=False, interpolate=False, upsample=False, simple=True)
+df_ex_NA = resample_df(df_select_hr, downsample=False, interpolate=False, upsample=False)
+
+import matplotlib.dates as mdates
+
+fig, ax = plt.subplots(figsize=(20, 10))
+# Set major ticks every 40 ms
+#ax.xaxis.set_major_locator(mdates.MicrosecondLocator(interval=40000))
+ax.set_axisbelow(True)
+ax.grid(True)
+
+ax.scatter(df_ex_NA.time, df_ex_NA.ppgRaw, c="black", s=5)
+ax.scatter(df_ex_U.time, df_ex_U.ppgRaw, c="green", s=30, alpha=0.5, marker="+")
+ax.scatter(df_ex_UI.time, df_ex_UI.ppgRaw, c="blue", s=1, alpha=0.1)
+ax.scatter(df_ex_UID.time, df_ex_UID.ppgRaw, c="red", s=5, alpha=0.5)
+ax.scatter(df_ex_S.time, df_ex_S.ppgRaw, c="purple", s=5, alpha=1.0)
+ax.plot(df_ex_UID.time, df_ex_UID.ppgRaw, c="red", alpha=0.1)
+
+plt.show()
+
+plt.savefig("ppg_plot.png", dpi=600, bbox_inches="tight")
+plt.close()
+```

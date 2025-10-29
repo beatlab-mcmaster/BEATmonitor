@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set environment name and script
-ENV_NAME="bangle_post_processing2"
+ENV_NAME="bangle_postprocess"
 PYTHON_SCRIPT="01-preprocess.py"
 
 # Activate conda

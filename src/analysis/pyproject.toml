@@ -1,0 +1,12 @@
+[project]
+name = "analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bangle-process",
+]
+
+[tool.uv.sources]
+bangle-process = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git" }

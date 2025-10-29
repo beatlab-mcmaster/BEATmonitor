@@ -1,0 +1,3 @@
+Watch,File,MAC,RecordStart,RecordFinish,Duration,Samples_hr,Samples_accel
+W002,example_data/raw/06-09_time_19-47-01_25fa_W002.csv,d0:ba:25:c0:25:fa,2025-06-09 15:47:01.028000-04:00,2025-06-09 15:48:04.845000-04:00,0 days 00:01:03.817000,541,500
+W034,example_data/raw/06-09_time_17-11-11_25fa_W034.csv,d0:ba:25:c0:25:fa,2025-06-09 13:11:11.616000-04:00,2025-06-09 13:12:24.295000-04:00,0 days 00:01:12.679000,1368,856
