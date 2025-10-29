@@ -27,7 +27,7 @@ app.use(express.static(settings.routePublic)); // Route html
 app.use("/node_modules", express.static(settings.routeNodeModules));
 
 app.get("/", (req, res) => {
-  logger.log("info", `Request from ${req.headers["user-agent"]}`);
+  logger.info(`Request from ${req.headers["user-agent"]}`);
   res.sendFile(settings.index); // Send dashboard to browser
 });
 
@@ -41,7 +41,7 @@ for (const dir of Object.values(settings.directory)) {
 // Check for known watches
 fs.readdirSync(settings.directory.watchList).forEach((file) => {
   if (file.endsWith(".json")) {
-    logger.log("info", `Reading known watch data: ${file}`);
+    logger.info(`Reading known watch data: ${file}`);
     let fWatchData = JSON.parse(
       fs.readFileSync(join(settings.directory.watchList, file)).toString(),
     );
@@ -72,12 +72,12 @@ var transferredFiles = readTransferredFiles();
 
 // Start web server
 server.listen(settings.port, () => {
-  logger.log("info", `Server is running: http://localhost:${settings.port}`);
+  logger.info(`Server is running: http://localhost:${settings.port}`);
 });
 
 // Power bluetooth
 noble.on("stateChange", function (state) {
-  logger.log("info", "NOBLE: stateChange -> " + state);
+  logger.info("NOBLE: stateChange -> " + state);
   if (state == "poweredOn") {
     noble.startScanning([], true);
   }
@@ -85,11 +85,11 @@ noble.on("stateChange", function (state) {
 
 // Nearby devices will be detected when scanning is enabled
 noble.on("scanStart", () => {
-  logger.log("info", `NOBLE: Bluetooth scanning started`);
+  logger.info(`NOBLE: Bluetooth scanning started`);
 });
 
 noble.on("scanStop", () => {
-  logger.log("info", `NOBLE: Bluetooth scanning stopped`);
+  logger.info(`NOBLE: Bluetooth scanning stopped`);
 });
 
 // Event when a new device is found
@@ -101,15 +101,18 @@ noble.on("discover", async function (dev) {
   // We are only interested in Bangle.js devices
   if (
     nearbyDevice.startsWith("Bangle.js") ||
-    nearbyDevice.startsWith("BEATLab")
+    nearbyDevice.startsWith("BEATLab") ||
+    nearbyDevice.startsWith("BEATwatch")
   ) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
-        logger.log("info", `NOBLE: Updating existing watch '${nearbyDevice}'`);
+        logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
         knownWatches.get(nearbyDevice).setPeripheral(dev);
       } else {
         knownWatches.get(nearbyDevice).setNearby = dev.rssi;
+        let rssiInfo = { device: nearbyDevice, rssi: dev.rssi };
+        logger.log("rssi", `${JSON.stringify(rssiInfo)}`);
         if (dev.advertisement.manufacturerData) {
           let deviceState = JSON.parse(
             // Set to 1 when watch is recording, 0 when ready
@@ -122,7 +125,7 @@ noble.on("discover", async function (dev) {
     } else {
       if (settings.allowNewDevices) {
         // Create a new watch
-        logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
+        logger.info(`NOBLE: Found new watch '${nearbyDevice}'`);
         knownWatches.set(nearbyDevice, new WatchDevice(dev));
       }
     }
@@ -131,24 +134,24 @@ noble.on("discover", async function (dev) {
 
 // Handle browser messages (from clients)
 io.on("connection", (socket: Socket) => {
-  logger.log("info", "Socket connected");
+  logger.info("Socket connected");
 
   socket.on("rsa", (msg): void => {
-    logger.log("info", `RSA: ${JSON.stringify(msg)}`);
+    logger.log("rsa", `RSA: ${JSON.stringify(msg)}`);
   });
 
   socket.emit("clearAll", "clear");
 
   socket.on("info", (msg): void => {
-    logger.log("info", `Client Info: ${msg}`);
+    logger.info(`Client Info: ${msg}`);
   });
 
   socket.on("btn-note", (note): void => {
-    logger.log("info", `SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
+    logger.info(`SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
   });
 
   socket.on("ui-btn", (msg): void => {
-    logger.log("info", `Client UI: ${msg}`);
+    logger.info(`Client UI: ${msg}`);
   });
 
   socket.on("btn-click", (data) => {
@@ -202,7 +205,7 @@ io.on("connection", (socket: Socket) => {
       switch (data.cmd) {
         case "reconnect":
           knownWatches.get(data.device).updated = false;
-          logger.log("info", `Reconnecting: ${data.device}`);
+          logger.info(`Reconnecting: ${data.device}`);
           break;
         case "getName":
           knownWatches.get(data.device).getPhysicalId();
@@ -282,10 +285,10 @@ io.on("connection", (socket: Socket) => {
 });
 
 io.engine.on("connection_error", (err) => {
-  logger.log("error", err.req); // the request object
-  logger.log("error", err.code); // the error code, for example 1
-  logger.log("error", err.message); // the error message, for example "Session ID unknown"
-  logger.log("error", err.context); // some additional error context
+  logger.error(err.req); // the request object
+  logger.error(err.code); // the error code, for example 1
+  logger.error(err.message); // the error message, for example "Session ID unknown"
+  logger.error(err.context); // some additional error context
 });
 
 // TODO: Resume function -- search for timestamp

@@ -304,11 +304,11 @@ class WatchDevice extends EventEmitter {
         (data: string) => {
           dataBuffer += data; // add packet to buffer
           if (dataBuffer.includes("[EOF]")) {
-            (dataBuffer = dataBuffer.replaceAll(
+            ((dataBuffer = dataBuffer.replaceAll(
               /(\\u0001|\x01)|(\r\n)|(\\r\\n)|(>)|\[EOF\]/g,
               "",
             )),
-              console.log(dataBuffer);
+              console.log(dataBuffer));
             this.storage = JSON.parse(dataBuffer);
             this._disconnect();
             console.log(this.storage);
@@ -711,7 +711,7 @@ class WatchDevice extends EventEmitter {
 
   // Timestamp logs
   _logging(msg: any) {
-    logger.log("info", `DEVICE: '${this.deviceId}' ${msg}`);
+    logger.info(`DEVICE: '${this.deviceId}' ${msg}`);
   }
 }
 
