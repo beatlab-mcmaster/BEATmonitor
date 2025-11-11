@@ -29,6 +29,11 @@ const settings = {
   routeNodeModules: join(__dirname, "node_modules"),
   index: join(__dirname, "public/dashboard.html"),
 
+  // Open sound control (optional)
+  listenOSC: true,
+  OSCport: 9007,
+  OSCnetwork: "0.0.0.0", // "0.0.0.0" = Any OSC messages
+
   // Time syncronization settings
   syncronizationTrials: 15, // The optimal sych offset will be estimated from n trials
   // Estimated delay (ms) from server time to setTime on watch; starting value

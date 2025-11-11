@@ -7,9 +7,10 @@ const customLevels = {
   levels: {
     error: 0,
     warn: 1,
-    info: 2,
-    rssi: 3,
-    rsa: 4,
+    osc: 2,
+    info: 3,
+    rssi: 4,
+    rsa: 5,
   },
   colors: {
     error: "red",
@@ -17,6 +18,7 @@ const customLevels = {
     info: "green",
     rssi: "blue",
     rsa: "magenta",
+    osc: "red",
   },
 };
 
@@ -93,6 +95,11 @@ const logger = winston.createLogger({
       filename: path.join(logDir, "rsa.log"),
       level: "rsa",
       format: winston.format.combine(filterOnly("rsa"), fileFormat),
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, "osc.log"),
+      level: "osc",
+      format: winston.format.combine(filterOnly("osc"), fileFormat),
     }),
   ],
 });

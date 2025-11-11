@@ -8,6 +8,7 @@
 import express from "express"; // Serve local web pages
 import { createServer } from "node:http";
 import { Server as SocketIOServer, Socket } from "socket.io"; // Communication between browser and node
+import osc from "osc";
 import fs from "fs";
 import logger from "./logger.js";
 import noble from "@abandonware/noble";
@@ -21,6 +22,42 @@ const knownWatches = new Map();
 const app = express();
 const server = createServer(app);
 const io = new SocketIOServer(server);
+
+// Listen to OSC messages
+const udpPort = new osc.UDPPort({
+  localAddress: settings.OSCnetwork,
+  localPort: settings.OSCport,
+  metadata: true,
+});
+
+udpPort.on("ready", () => {
+  logger.log("osc", `Listening for OSC over UDP on ${settings.OSCport}`);
+});
+
+udpPort.on("message", (oscMsg, timeTag, info) => {
+  function toInt64(v) {
+    const high = v.high >>> 0;
+    const low = v.low >>> 0;
+    return high * 2 ** 32 + low;
+  }
+  const arg = oscMsg.args?.[0];
+  let oscInfo = {
+    from: info,
+    message: oscMsg.address,
+    arguments: oscMsg.args,
+    msgLength: oscMsg.args.length,
+  };
+  if (arg && arg.type === "h") {
+    const value = toInt64(arg.value);
+    const now = Math.floor(Date.now() / 10); // same scale as time.time() * 100
+    const diff = now - value;
+    oscInfo["receivedTime"] = value;
+    oscInfo["timeDiff"] = diff;
+  }
+  logger.log("osc", `${JSON.stringify(oscInfo)}`);
+});
+
+udpPort.open();
 
 app.use(express.static(settings.routePublic)); // Route html
 
@@ -208,7 +245,7 @@ io.on("connection", (socket: Socket) => {
           logger.info(`Reconnecting: ${data.device}`);
           break;
         case "getName":
-          knownWatches.get(data.device).getPhysicalId();
+          knownWatches.get(data.device).getDeviceInfo();
           break;
         case "getDrift":
           knownWatches.get(data.device).getDriftEstimate();
