@@ -31,7 +31,7 @@ const settings = {
 
   // Open sound control (optional)
   listenOSC: true,
-  OSCport: 9007,
+  OSCport: 9006,
   OSCnetwork: "0.0.0.0", // "0.0.0.0" = Any OSC messages
 
   // Time syncronization settings
@@ -59,6 +59,9 @@ const settings = {
 
   // Connection settings
   nearbyTimeout: 10000, // ms to wait since last signal detected from watch before updating to 'Unknown'
+
+  // Survey configuration
+  nItems: 4,
 };
 
 export { settings, join };
