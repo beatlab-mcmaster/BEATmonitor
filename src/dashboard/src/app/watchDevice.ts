@@ -13,8 +13,12 @@ export type info = { [key: string]: any };
 
 class WatchDevice extends EventEmitter {
   peripheralUpdated: boolean = false;
-  deviceId: string; // as 'Bangle.js xxxx'
-  watchName: string; // as 'Wxxx'
+  deviceId: string; // as 'BEATwatch xxxx'
+  // Watch settings
+  watchName: string; // as 'xxxx'
+  recordHR: boolean;
+  recordAccel: boolean;
+  allowManual: boolean;
   MACid: string;
   serialNumber: string;
   peripheral: undefined | Peripheral;
@@ -30,6 +34,7 @@ class WatchDevice extends EventEmitter {
   avgOffset: string | number = "Not set";
   timeSyncAccuracy: string | number = "Not synced!";
   progressMsg: string = "";
+  surveyProgress: object = { question: 0, item: 0, nItems: settings.nItems };
 
   constructor(
     peripheral: undefined | Peripheral = undefined,
@@ -66,7 +71,7 @@ class WatchDevice extends EventEmitter {
     this.peripheral = peripheral;
     this.deviceId = peripheral.advertisement.localName;
     this.peripheralUpdated = true;
-    await this.getPhysicalId();
+    await this.getDeviceInfo();
     this.writeWatchDataFile();
   }
 
@@ -82,7 +87,7 @@ class WatchDevice extends EventEmitter {
       JSON.stringify(data),
       (err) => {
         if (err) {
-          console.error(err);
+          logger.error(`DEVICE: ${this.deviceId}: ${err}`);
         } else {
           // file written successfully
         }
@@ -105,6 +110,14 @@ class WatchDevice extends EventEmitter {
     this.emit("watchInfoAll", info);
   }
 
+  reconnect() {
+    this.emit("watchInfoSingle", {
+      DeviceID: this.deviceId,
+      component: "reconnect",
+      value: true,
+    });
+  }
+
   // return a single parameter
   getInfoSingle(component: string) {
     let value: number | boolean | string | string[] = "";
@@ -114,6 +127,9 @@ class WatchDevice extends EventEmitter {
         break;
       case "progress":
         value = this.progressMsg;
+        break;
+      case "surveyProgress":
+        value = this.surveyProgress;
         break;
       case "watchName":
         value = this.watchName;
@@ -229,7 +245,10 @@ class WatchDevice extends EventEmitter {
             this._logging(
               `AverageOffset: ${this.avgOffset}, EstimatedAccuracy: ${this.timeSyncAccuracy}`,
             );
-            this._logging(JSON.stringify(trialData));
+            logger.log(
+              "timeSync",
+              `DEVICE: '${this.deviceId}' ${JSON.stringify(trialData)}`,
+            );
           }
           setTimeout(() => {
             resolve();
@@ -256,7 +275,6 @@ class WatchDevice extends EventEmitter {
             this._logging(
               `[Estimate Drift] server: ${serverTime}, avgOffset: ${this.avgOffset}, offsetTime: ${offsetTime}, data: ${data}, difference: ${diff}`,
             );
-            //console.log(offsetTime - data);
             this._disconnect();
             setTimeout(() => {
               resolve();
@@ -267,22 +285,40 @@ class WatchDevice extends EventEmitter {
     }
   }
 
-  // The physical id is configured when loading the watch app (from the Bangle.js App Loader)
-  getPhysicalId() {
+  // Settings are configured when loading the watch app
+  //   (from the Bangle.js App Loader)
+  getDeviceInfo() {
+    let dataBuffer: string = "";
+    let foundSettings: Object | undefined = undefined;
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
           // 'sendWatchId' is a part of watch app, returns the watch id
-          this._write(`sendWatchId();`);
+          this._write(`sendSettings();`);
         },
         (data: any) => {
-          // Store as watchName
-          if (data.startsWith("[INFO]")) {
-            this.watchName = "N/A";
-          } else {
-            this.watchName = data.replace(/(\r\n>)|(>)/, "");
+          // Read full string from watch (JSON data)
+          dataBuffer += data;
+          let line: string[] = [];
+          line = dataBuffer.split("\r\n");
+          dataBuffer = line.pop() ?? "";
+          line.forEach((e) => {
+            try {
+              foundSettings = JSON.parse(e);
+            } catch (err) {
+              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
+              foundSettings = undefined;
+            }
+          });
+          if (foundSettings) {
+            this.watchName = foundSettings.physicalId;
+            this.recordHR = foundSettings.recordHR;
+            this.recordAccel = foundSettings.recordAccel;
+            this.allowManual = foundSettings.allowManual;
           }
-          this._logging(`got id: ${this.watchName}`);
+          this._logging(
+            `Found settings for: ${this.watchName} [HR: ${this.recordHR}; ACC: ${this.recordAccel}; Manual: ${this.allowManual}]`,
+          );
           this.getInfoSingle("watchName");
           this._disconnect();
           setTimeout(() => {
@@ -320,13 +356,17 @@ class WatchDevice extends EventEmitter {
                 JSON.stringify(this.storage),
                 (err) => {
                   if (err) {
-                    console.log(`write> ${err}`);
+                    logger.error(
+                      `DEVICE ${this.deviceId}: Error writing file: ${err}`,
+                    );
                   } else {
                   }
                 },
               );
             } catch (err) {
-              console.error(err);
+              logger.error(
+                `DEVICE ${this.deviceId}: Error writing file: ${err}`,
+              );
             }
           }
           setTimeout(() => {
@@ -365,7 +405,6 @@ class WatchDevice extends EventEmitter {
           line.forEach((e) => {
             let ln: string = e.replace(/\r|>|\n/g, ""); // remove weird carriage returns
             ln = ln.replace(/^\x1b?\[J/, ""); // and characters
-            // console.log(ln); // debug -- clean line of data
             if (ln.length != 0) {
               if (ln.includes("[INFO] Sending file")) {
                 this.progressMsg = ln; // display progress
@@ -377,7 +416,7 @@ class WatchDevice extends EventEmitter {
                 receivedFileName =
                   file.File.Name?.replace(/:/g, "-")?.replace("T", "_time_") +
                   fileType;
-                console.log(receivedFileName); // TODO: fix this!
+                this._logging(receivedFileName); // TODO: fix this!
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
                 recievedFile.push(ln); // add json line to file (line 2)
@@ -395,13 +434,13 @@ class WatchDevice extends EventEmitter {
                     recievedFile.join("\n"),
                     (err) => {
                       if (err) {
-                        console.log(`write> ${err}`);
+                        logger.error(`DEVICE: ${this.deviceId}: write> ${err}`);
                       } else {
                       }
                     },
                   );
                 } catch (err) {
-                  console.log(`try> ${err}`);
+                  logger.error(`DEVICE: ${this.deviceId}: write> ${err}`);
                 }
                 this._disconnect();
               } else {
@@ -420,7 +459,7 @@ class WatchDevice extends EventEmitter {
   // If device is in range, set nearby for 10s
   set setNearby(rssi: number) {
     this.nearby = rssi;
-    this.setState = 0;
+    // this.setState = 0;
     clearTimeout(this.nearbyTimeout);
     this.getInfoSingle("nearby");
 
@@ -449,16 +488,40 @@ class WatchDevice extends EventEmitter {
     this.getInfoSingle("state");
   }
 
+  // Track survey progress
+  set setProgress(surveyData: object) {
+    for (let i in surveyData) {
+      this.surveyProgress[i] = surveyData[i];
+    }
+    this.getInfoSingle("surveyProgress");
+  }
+
   // Call 'startRecord()' on watch
   startRecording() {
+    let dataBuffer: string = "";
+    let response: Object | undefined;
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
           this._write("startRecord();");
         },
         (data) => {
-          this._disconnect();
+          // Read full string from watch (JSON data)
+          dataBuffer += data;
+          let line: string[] = [];
+          line = dataBuffer.split("\r\n");
+          dataBuffer = line.pop() ?? "";
+          line.forEach((e) => {
+            try {
+              // response = JSON.parse(e);
+              this._logging(e);
+            } catch (err) {
+              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
+              response = undefined;
+            }
+          });
           setTimeout(() => {
+            this._disconnect();
             resolve();
           }, settings.delay);
         },
@@ -486,14 +549,30 @@ class WatchDevice extends EventEmitter {
 
   // Call 'stopRecord()' on watch
   stopRecording() {
+    let dataBuffer: string = "";
+    let response: Object | undefined = undefined;
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
           this._write("stopRecord();");
         },
         (data: string) => {
-          this._disconnect();
+          // Read full string from watch (JSON data)
+          dataBuffer += data;
+          let line: string[] = [];
+          line = dataBuffer.split("\r\n");
+          dataBuffer = line.pop() ?? "";
+          line.forEach((e) => {
+            try {
+              // response = JSON.parse(e);
+              this._logging(e);
+            } catch (err) {
+              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
+              response = undefined;
+            }
+          });
           setTimeout(() => {
+            this._disconnect();
             resolve();
           }, settings.delay);
         },
@@ -547,7 +626,6 @@ class WatchDevice extends EventEmitter {
                 };
                 this.emit("watchInfoSingle", info);
               }
-              // console.log(obs);
             }
           });
           setTimeout(() => {

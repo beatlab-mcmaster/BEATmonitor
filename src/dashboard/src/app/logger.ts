@@ -11,6 +11,7 @@ const customLevels = {
     info: 3,
     rssi: 4,
     rsa: 5,
+    timeSync: 6,
   },
   colors: {
     error: "red",
@@ -19,6 +20,7 @@ const customLevels = {
     rssi: "blue",
     rsa: "magenta",
     osc: "red",
+    timeSync: "blue",
   },
 };
 
@@ -100,6 +102,11 @@ const logger = winston.createLogger({
       filename: path.join(logDir, "osc.log"),
       level: "osc",
       format: winston.format.combine(filterOnly("osc"), fileFormat),
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, "timeSync.log"),
+      level: "timeSync",
+      format: winston.format.combine(filterOnly("timeSync"), fileFormat),
     }),
   ],
 });

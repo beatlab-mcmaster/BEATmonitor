@@ -24,6 +24,7 @@ const server = createServer(app);
 const io = new SocketIOServer(server);
 
 // Listen to OSC messages
+var nMessageOSC = 0;
 const udpPort = new osc.UDPPort({
   localAddress: settings.OSCnetwork,
   localPort: settings.OSCport,
@@ -35,19 +36,23 @@ udpPort.on("ready", () => {
 });
 
 udpPort.on("message", (oscMsg, timeTag, info) => {
+  nMessageOSC += 1;
   function toInt64(v) {
+    // Needed to deal with 64-bit python data
     const high = v.high >>> 0;
     const low = v.low >>> 0;
     return high * 2 ** 32 + low;
   }
   const arg = oscMsg.args?.[0];
   let oscInfo = {
+    id: nMessageOSC,
     from: info,
     message: oscMsg.address,
     arguments: oscMsg.args,
     msgLength: oscMsg.args.length,
   };
   if (arg && arg.type === "h") {
+    // Compare sent time to received time
     const value = toInt64(arg.value);
     const now = Math.floor(Date.now() / 10); // same scale as time.time() * 100
     const diff = now - value;
@@ -135,6 +140,9 @@ noble.on("discover", async function (dev) {
 
   if (typeof nearbyDevice == "undefined") return;
 
+  if (nearbyDevice.startsWith("BE")) {
+    // console.log(nearbyDevice);
+  }
   // We are only interested in Bangle.js devices
   if (
     nearbyDevice.startsWith("Bangle.js") ||
@@ -151,12 +159,31 @@ noble.on("discover", async function (dev) {
         let rssiInfo = { device: nearbyDevice, rssi: dev.rssi };
         logger.log("rssi", `${JSON.stringify(rssiInfo)}`);
         if (dev.advertisement.manufacturerData) {
-          let deviceState = JSON.parse(
+          let deviceData = dev.advertisement.manufacturerData
+            .toString()
+            .substring(2);
+          let deviceState = { s: 0, question: 0, item: 0 };
+          try {
             // Set to 1 when watch is recording, 0 when ready
-            dev.advertisement.manufacturerData.toString().substring(2),
-          );
-          // Update the device state
-          knownWatches.get(nearbyDevice).setState = deviceState.s;
+            deviceState = JSON.parse(deviceData);
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              let deviceString = deviceData.split(",");
+              deviceState = {
+                s: Number(deviceString[0]),
+                question: Number(deviceString[1]),
+                item: Number(deviceString[2]),
+              };
+              knownWatches.get(nearbyDevice).setProgress = deviceState;
+              // console.log(JSON.stringify(deviceState));
+            } else {
+              logger.error(e.message);
+            }
+          } finally {
+            // Update the device state
+            // console.log(deviceState);
+            knownWatches.get(nearbyDevice).setState = deviceState.s;
+          }
         }
       }
     } else {
@@ -241,8 +268,9 @@ io.on("connection", (socket: Socket) => {
       // Send command to single watch
       switch (data.cmd) {
         case "reconnect":
-          knownWatches.get(data.device).updated = false;
+          knownWatches.get(data.device).reconnect();
           logger.info(`Reconnecting: ${data.device}`);
+          knownWatches.delete(data.device);
           break;
         case "getName":
           knownWatches.get(data.device).getDeviceInfo();
