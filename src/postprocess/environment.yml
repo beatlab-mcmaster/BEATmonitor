@@ -9,6 +9,7 @@ dependencies:
   - jupyterlab=4.3.4
   - neurokit2=0.2.10
   - pandas=2.2.2
+  - numpy=1.26
   - plotly=5.24.1
   - pyarrow=18.1.0
   - python-kaleido=0.2.1
@@ -18,4 +19,5 @@ dependencies:
   - xarray=2025.1.1
   - holoviews
   - selenium
+  - libgfortran
 prefix: /opt/homebrew/Caskroom/miniconda/base/envs/bangle_post_processing
