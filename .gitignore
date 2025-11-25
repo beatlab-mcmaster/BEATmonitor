@@ -197,3 +197,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 .Rproj.user
+src/analysis/example_results
