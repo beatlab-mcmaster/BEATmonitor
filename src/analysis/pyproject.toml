@@ -5,8 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "bangle-process",
+  "beatwatch-process",
+  "bokeh>=3.8.0",
+  "holoviews>=1.21.0",
+  "hvplot>=0.12.1",
+  "jupyterlab>=4.4.10",
+  "narwhals>=2.10.2",
+  "neurokit2>=0.2.12",
+  "pyarrow>=22.0.0",
 ]
 
+[tool.basedpyright]
+typeCheckingMode = "basic"
+
 [tool.uv.sources]
-bangle-process = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git" }
+beatwatch-process = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git" }
