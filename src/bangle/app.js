@@ -383,6 +383,13 @@ function getDrift(serverTime) {
   Bluetooth.println(watchTime);
 }
 
+// ---------------------------- Vibration -------------------------------------
+function setVibrate(time, strength) {
+  Bangle.buzz(time, strength).then(() => {
+    print("[INFO] Vibration done");
+  });
+}
+
 // ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
