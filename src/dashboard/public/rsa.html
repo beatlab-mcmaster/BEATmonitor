@@ -72,7 +72,7 @@
       const ringColourMain = "#0000FF"; // cyan
       const ringColourFade = "#000088"; //
       const ringSizeMin = 75;
-      const ringSizeMax = 200;
+      const ringSizeMax = 400;
       const ringAnimationTime = 4000; // milliseconds
 
       const canvas = document.getElementById("ringCanvas");
@@ -160,12 +160,12 @@
         ctx.beginPath();
         ctx.arc(width / 2, height / 2, radius, 0, 2 * Math.PI);
         ctx.strokeStyle = ringColor;
-        ctx.lineWidth = 20;
+        ctx.lineWidth = 40;
         ctx.stroke();
 
         // Text
         ctx.fillStyle = "white";
-        ctx.font = "bold 32px sans-serif";
+        ctx.font = "bold 70px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(

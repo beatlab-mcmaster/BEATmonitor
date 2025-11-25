@@ -8,6 +8,7 @@
 import express from "express"; // Serve local web pages
 import { createServer } from "node:http";
 import { Server as SocketIOServer, Socket } from "socket.io"; // Communication between browser and node
+import osc from "osc";
 import fs from "fs";
 import logger from "./logger.js";
 import noble from "@abandonware/noble";
@@ -22,12 +23,53 @@ const app = express();
 const server = createServer(app);
 const io = new SocketIOServer(server);
 
+// Listen to OSC messages
+var nMessageOSC = 0;
+const udpPort = new osc.UDPPort({
+  localAddress: settings.OSCnetwork,
+  localPort: settings.OSCport,
+  metadata: true,
+});
+
+udpPort.on("ready", () => {
+  logger.log("osc", `Listening for OSC over UDP on ${settings.OSCport}`);
+});
+
+udpPort.on("message", (oscMsg, timeTag, info) => {
+  nMessageOSC += 1;
+  function toInt64(v) {
+    // Needed to deal with 64-bit python data
+    const high = v.high >>> 0;
+    const low = v.low >>> 0;
+    return high * 2 ** 32 + low;
+  }
+  const arg = oscMsg.args?.[0];
+  let oscInfo = {
+    id: nMessageOSC,
+    from: info,
+    message: oscMsg.address,
+    arguments: oscMsg.args,
+    msgLength: oscMsg.args.length,
+  };
+  if (arg && arg.type === "h") {
+    // Compare sent time to received time
+    const value = toInt64(arg.value);
+    const now = Math.floor(Date.now() / 10); // same scale as time.time() * 100
+    const diff = now - value;
+    oscInfo["receivedTime"] = value;
+    oscInfo["timeDiff"] = diff;
+  }
+  logger.log("osc", `${JSON.stringify(oscInfo)}`);
+});
+
+udpPort.open();
+
 app.use(express.static(settings.routePublic)); // Route html
 
 app.use("/node_modules", express.static(settings.routeNodeModules));
 
 app.get("/", (req, res) => {
-  logger.log("info", `Request from ${req.headers["user-agent"]}`);
+  logger.info(`Request from ${req.headers["user-agent"]}`);
   res.sendFile(settings.index); // Send dashboard to browser
 });
 
@@ -41,7 +83,7 @@ for (const dir of Object.values(settings.directory)) {
 // Check for known watches
 fs.readdirSync(settings.directory.watchList).forEach((file) => {
   if (file.endsWith(".json")) {
-    logger.log("info", `Reading known watch data: ${file}`);
+    logger.info(`Reading known watch data: ${file}`);
     let fWatchData = JSON.parse(
       fs.readFileSync(join(settings.directory.watchList, file)).toString(),
     );
@@ -72,12 +114,12 @@ var transferredFiles = readTransferredFiles();
 
 // Start web server
 server.listen(settings.port, () => {
-  logger.log("info", `Server is running: http://localhost:${settings.port}`);
+  logger.info(`Server is running: http://localhost:${settings.port}`);
 });
 
 // Power bluetooth
 noble.on("stateChange", function (state) {
-  logger.log("info", "NOBLE: stateChange -> " + state);
+  logger.info("NOBLE: stateChange -> " + state);
   if (state == "poweredOn") {
     noble.startScanning([], true);
   }
@@ -85,11 +127,11 @@ noble.on("stateChange", function (state) {
 
 // Nearby devices will be detected when scanning is enabled
 noble.on("scanStart", () => {
-  logger.log("info", `NOBLE: Bluetooth scanning started`);
+  logger.info(`NOBLE: Bluetooth scanning started`);
 });
 
 noble.on("scanStop", () => {
-  logger.log("info", `NOBLE: Bluetooth scanning stopped`);
+  logger.info(`NOBLE: Bluetooth scanning stopped`);
 });
 
 // Event when a new device is found
@@ -98,32 +140,56 @@ noble.on("discover", async function (dev) {
 
   if (typeof nearbyDevice == "undefined") return;
 
+  if (nearbyDevice.startsWith("BE")) {
+    // console.log(nearbyDevice);
+  }
   // We are only interested in Bangle.js devices
   if (
     nearbyDevice.startsWith("Bangle.js") ||
-    nearbyDevice.startsWith("BEATwatch") ||
-    nearbyDevice.startsWith("BEATLab")
+    nearbyDevice.startsWith("BEATLab") ||
+    nearbyDevice.startsWith("BEATwatch")
   ) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
-        logger.log("info", `NOBLE: Updating existing watch '${nearbyDevice}'`);
+        logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
         knownWatches.get(nearbyDevice).setPeripheral(dev);
       } else {
         knownWatches.get(nearbyDevice).setNearby = dev.rssi;
+        let rssiInfo = { device: nearbyDevice, rssi: dev.rssi };
+        logger.log("rssi", `${JSON.stringify(rssiInfo)}`);
         if (dev.advertisement.manufacturerData) {
-          let deviceState = JSON.parse(
+          let deviceData = dev.advertisement.manufacturerData
+            .toString()
+            .substring(2);
+          let deviceState = { s: 0, question: 0, item: 0 };
+          try {
             // Set to 1 when watch is recording, 0 when ready
-            dev.advertisement.manufacturerData.toString().substring(2),
-          );
-          // Update the device state
-          knownWatches.get(nearbyDevice).setState = deviceState.s;
+            deviceState = JSON.parse(deviceData);
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              let deviceString = deviceData.split(",");
+              deviceState = {
+                s: Number(deviceString[0]),
+                question: Number(deviceString[1]),
+                item: Number(deviceString[2]),
+              };
+              knownWatches.get(nearbyDevice).setProgress = deviceState;
+              // console.log(JSON.stringify(deviceState));
+            } else {
+              logger.error(e.message);
+            }
+          } finally {
+            // Update the device state
+            // console.log(deviceState);
+            knownWatches.get(nearbyDevice).setState = deviceState.s;
+          }
         }
       }
     } else {
       if (settings.allowNewDevices) {
         // Create a new watch
-        logger.log("info", `NOBLE: Found new watch '${nearbyDevice}'`);
+        logger.info(`NOBLE: Found new watch '${nearbyDevice}'`);
         knownWatches.set(nearbyDevice, new WatchDevice(dev));
       }
     }
@@ -132,24 +198,24 @@ noble.on("discover", async function (dev) {
 
 // Handle browser messages (from clients)
 io.on("connection", (socket: Socket) => {
-  logger.log("info", "Socket connected");
+  logger.info("Socket connected");
 
   socket.on("rsa", (msg): void => {
-    logger.log("info", `RSA: ${JSON.stringify(msg)}`);
+    logger.log("rsa", `RSA: ${JSON.stringify(msg)}`);
   });
 
   socket.emit("clearAll", "clear");
 
   socket.on("info", (msg): void => {
-    logger.log("info", `Client Info: ${msg}`);
+    logger.info(`Client Info: ${msg}`);
   });
 
   socket.on("btn-note", (note): void => {
-    logger.log("info", `SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
+    logger.info(`SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
   });
 
   socket.on("ui-btn", (msg): void => {
-    logger.log("info", `Client UI: ${msg}`);
+    logger.info(`Client UI: ${msg}`);
   });
 
   socket.on("btn-click", (data) => {
@@ -202,11 +268,12 @@ io.on("connection", (socket: Socket) => {
       // Send command to single watch
       switch (data.cmd) {
         case "reconnect":
-          knownWatches.get(data.device).updated = false;
-          logger.log("info", `Reconnecting: ${data.device}`);
+          knownWatches.get(data.device).reconnect();
+          logger.info(`Reconnecting: ${data.device}`);
+          knownWatches.delete(data.device);
           break;
         case "getName":
-          knownWatches.get(data.device).getPhysicalId();
+          knownWatches.get(data.device).getDeviceInfo();
           break;
         case "getDrift":
           knownWatches.get(data.device).getDriftEstimate();
@@ -283,10 +350,10 @@ io.on("connection", (socket: Socket) => {
 });
 
 io.engine.on("connection_error", (err) => {
-  logger.log("error", err.req); // the request object
-  logger.log("error", err.code); // the error code, for example 1
-  logger.log("error", err.message); // the error message, for example "Session ID unknown"
-  logger.log("error", err.context); // some additional error context
+  logger.error(err.req); // the request object
+  logger.error(err.code); // the error code, for example 1
+  logger.error(err.message); // the error message, for example "Session ID unknown"
+  logger.error(err.context); // some additional error context
 });
 
 // TODO: Resume function -- search for timestamp

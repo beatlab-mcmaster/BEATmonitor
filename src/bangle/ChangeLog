@@ -6,3 +6,5 @@
 0.05: Add vibrations and streaming function
 0.051: Change sendStorage function to include file sizes
 0.052: Records acceleration (x, y, x, magnitude, difference)
+0.053: Add option to record acceleration to settings.json
+0.100: Breaking changes! Add settings file; improve watch logging/feedback

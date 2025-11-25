@@ -47,6 +47,7 @@ socket.on("watchInfoAll", (data) => {
     // Add new watch to list
     addWatch("watchList", data.DeviceID);
     addButtons(`${data.DeviceID}-buttons`, ctlButtons, data.DeviceID);
+    addSurvey(data.DeviceID);
   }
 });
 
@@ -55,6 +56,9 @@ socket.on("watchInfoSingle", (data) => {
   if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
     let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
     switch (data.component) {
+      case "reconnect":
+        elp.remove();
+        break;
       case "connected":
         data.value
           ? updateIcon(`${data.DeviceID}-tConnected`, icons.connected)
@@ -62,6 +66,9 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "progress":
         updateText(`${data.DeviceID}-${data.component}`, data.value);
+        break;
+      case "surveyProgress":
+        updateSurvey(`${data.DeviceID}`, data.value);
         break;
       case "watchName":
         console.log(data);
@@ -105,15 +112,24 @@ socket.on("watchInfoSingle", (data) => {
         // Remove old options
         while (updateStorage.options.length) updateStorage.remove(0);
         // Resize list to show all files
-        updateStorage.size = data.value.files.length;
-        // Add file list to storage selector
-        data.value.files.forEach((e) => {
-          console.log(e);
-          let option = document.createElement("option");
-          option.value = e.name;
-          option.text = e.name + `  \t[ ${e.size.toLocaleString()} bytes ]`;
-          updateStorage.appendChild(option);
-        });
+        if (data.value.files.length) {
+          updateStorage.size = data.value.files.length;
+          // Add file list to storage selector
+          data.value.files.forEach((e) => {
+            console.log(e);
+            let option = document.createElement("option");
+            option.value = e.name;
+            option.text = e.name + `  \t[ ${e.size.toLocaleString()} bytes ]`;
+            updateStorage.appendChild(option);
+          });
+        } else {
+          // create the disabled option
+          let disabledOption = document.createElement("option");
+          disabledOption.textContent = "No files found";
+          disabledOption.disabled = true;
+          disabledOption.selected = true;
+          updateStorage.appendChild(disabledOption);
+        }
         break;
       default:
         let updateElement = document.getElementById(
@@ -197,14 +213,14 @@ const icons: { [key: string]: icon } = {
 
 // Default icons
 const watchIcons = {
-  tWatch: icons.watchNorm,
-  tDevice: icons.device,
+  // tWatch: icons.watchNorm,
+  // tDevice: icons.device,
   tNearby: icons.btNotNear,
   tConnected: icons.notConnected,
   tState: icons.stateUnknown,
   tTimeSync: icons.notSynced,
-  tStorage: icons.noStorage,
-  tProgress: icons.progressIdle,
+  // tStorage: icons.noStorage,
+  // tProgress: icons.progressIdle,
   na: icons.na,
 };
 
@@ -294,6 +310,45 @@ let addButtons = function (
     selElement.appendChild(newTextbox);
   } else {
     console.error(`Failed to add buttons to '${id}'`);
+  }
+};
+
+let addSurvey = function (deviceId): void {
+  let selElement = document.getElementById(`${deviceId}-watchContainer`);
+  if (selElement != null) {
+    console.log(`Creating survey container for ${deviceId}`);
+    let surveyContainer = document.createElement("div");
+    surveyContainer.className = "surveyContainer";
+    surveyContainer.id = `${deviceId}-surveyContainer`;
+    surveyContainer.textContent = "NA";
+    selElement.appendChild(surveyContainer);
+  }
+};
+
+let updateSurvey = function (deviceId: string, data: Object) {
+  let selElement = document.getElementById(`${deviceId}-surveyContainer`);
+  if (selElement != null) {
+    let wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    let label = document.createElement("span");
+    label.textContent = data.question;
+    label.style.paddingRight = "5px";
+    wrap.appendChild(label);
+    let squares = document.createElement("div");
+    squares.style.display = "flex";
+    squares.style.gap = "2px";
+    for (let i = 0; i < data.nItems; i++) {
+      const sq = document.createElement("div");
+      sq.style.width = "8px";
+      sq.style.height = "8px";
+      sq.style.border = "1px solid #666";
+      sq.style.backgroundColor = i < data.item ? "green" : "red";
+      squares.appendChild(sq);
+    }
+    wrap.appendChild(squares);
+    selElement.innerHTML = ""; // clear old content
+    selElement.appendChild(wrap);
   }
 };
 

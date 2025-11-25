@@ -1,0 +1,19 @@
+timezone: America/Toronto # The timezone of data collection
+
+directories:
+  data:
+    raw: example_data/raw/ # Raw data directory
+    processed: example_data/processed/ # Optional, processed data stored here
+    summary: example_results/summary/ # Data summary csv files stored here
+  figures: example_results/figures/ # Output directory for figures
+  tables: example_results/tables/ # Output directory for tables
+
+access_data:
+  storage_file_type: csv # Default is parquet (smaller file sizes)
+  minimum_record_length: 20 # Optional, data under this duration (seconds) will be excluded
+  minimum_sample_rate: 10 # Optional, data under this average sample rate (samples per second) will be excluded
+
+pipelines:
+  HR_resample_rate: 1000 # The resample rate in ms for processing HR data
+  PPG_resample_rate: 25 # The resample rate in ms for processing PPG data
+  interpolation_rate: 1 # In ms; preliminary step for resampling PPG data (quality degrades if set higher than 1)
