@@ -10,42 +10,60 @@ The example postprocessing template/tutorial provides a step by step walk throug
 
 ## Installation
 
-We have set up a python environment for running this process.
-If you do not have Conda installed, follow the installation instructions.
-Otherwise, navigate to the `src/postprocess` folder in this repository and run the command in [Initialize environment](#initialize-environment).
+We have set up a python environment for running this process. Note: original package management used conda, I recently switched to uv (fast, simple setup).
 
-### Install Conda
+### Install uv
 
-See [instructions](https://docs.anaconda.com/miniconda/install/#installing-miniconda) to install.
+See [documentation](https://docs.astral.sh/uv/getting-started/installation/) to install.
+
+Example: recommended on Mac (use [brew](https://brew.sh)):
+
+```sh
+brew install uv
+```
 
 ### Initialize environment
 
-In the Terminal, run the following commands
+In the Terminal, navigate to the analysis directory:
 
-- Note: on Windows, open the 'Anaconda prompt' to run the initialization.
-
-```bash
-conda env create -f environment.yml
+```sh
+cd <project root directory>/src/analysis/
 ```
 
-For reference:
+Then run the following commands
 
-- [Creating an environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
-- [Saving an environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#exporting-the-environment-yml-file)
+```sh
+uv sync
+```
 
 ### Activate environment
 
-```bash
-conda activate bangle_post_processing
+The environment is activated whenever `uv` is used to run commands. For example:
+
+To run python:
+
+```sh
+uv run python
 ```
-You will know you have successfully activated the environment when you see `(bangle_post_processing)` at the start of your terminal prompt.
+
+To run jupyter lab:
+
+```sh
+uv run jupyter lab
+```
+
+To run a script:
+
+```sh
+uv run process_acceleration.py
+```
 
 ## Template tutorial
 
 Once the environment is activated, you can step through an example tutorial script in Jupyter Lab. First launch Jupyter Lab by running the following command in the terminal:
 
-```bash
-jupyter lab
+```sh
+uv run jupyter lab
 ```
 
 Jupyter should open up in your web browser.
@@ -63,30 +81,3 @@ Guide to convert [Jupyter notebooks to Python](https://linuxhaxor.net/code/conve
 Guide to [Python project setup](https://goodresearch.dev/setup)
 
 ## Dependencies
-
-### From history
-
-`conda env export --from-history`
-
-```yaml
-name: bangle_post_processing
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - dask=2024.12.1
-  - datashader=0.16.3
-  - flatten-dict=0.4.2
-  - jupyterlab=4.3.4
-  - neurokit2=0.2.10
-  - pandas=2.2.2
-  - plotly=5.24.1
-  - pyarrow=18.1.0
-  - python-kaleido=0.2.1
-  - python=3.11.0
-  - pytz=2024.2
-  - pyyaml=6.0.2
-  - xarray=2025.1.1
-  - holoviews
-  - selenium
-```

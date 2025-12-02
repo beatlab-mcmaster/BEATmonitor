@@ -1,0 +1,16 @@
+project_dir: analysis # Currently unused
+
+timezone: America/Toronto # The timezone of data collection
+
+data_path: example_data/ # Path to raw data
+output_path: example_results/ # Path to store results
+
+max_gap_hr: 140 # Gaps larger than 3 samples at ~40 ms
+max_gap_accel: 300 # Gaps larger than 3 samples at ~80 ms
+
+rate_upsample: 1 # Sample rate in milliseconds
+rate_downsample: 40 # Sample rate in milliseconds (40ms = 25Hz)
+
+output_file_type: parquet # Options: 'parquet', TODO: add 'csv'
+output_individual_files: True # Write each watch as separate files
+output_combined_files: True # Combine all watches into single file
