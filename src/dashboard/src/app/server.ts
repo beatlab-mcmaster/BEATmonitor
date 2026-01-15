@@ -15,6 +15,7 @@ import noble from "@abandonware/noble";
 import { info, WatchDevice } from "./watchDevice.js";
 import { settings, join } from "./config.js";
 
+const allowDuplicates = true; // For clarity--must be true for BLE scan responses!
 // Mapping to track watches
 const knownWatches = new Map();
 
@@ -121,7 +122,7 @@ server.listen(settings.port, () => {
 noble.on("stateChange", function (state) {
   logger.info("NOBLE: stateChange -> " + state);
   if (state == "poweredOn") {
-    noble.startScanning([], true);
+    noble.startScanning([], allowDuplicates);
   }
 });
 
@@ -136,17 +137,16 @@ noble.on("scanStop", () => {
 
 // Event when a new device is found
 noble.on("discover", async function (dev) {
+  // TODO: remember peripheral (it's possible to attempt connecting without 'discovering' a device)
   let nearbyDevice = dev.advertisement.localName;
 
   if (typeof nearbyDevice == "undefined") return;
 
-  if (nearbyDevice.startsWith("BE")) {
-    // console.log(nearbyDevice);
-  }
   // We are only interested in Bangle.js devices
   if (
-    nearbyDevice.startsWith("Bangle.js") ||
+    nearbyDevice.startsWith("Bangle.js")||
     nearbyDevice.startsWith("BEATLab") ||
+    nearbyDevice.startsWith("BW") ||
     nearbyDevice.startsWith("BEATwatch")
   ) {
     if (knownWatches.has(nearbyDevice)) {
@@ -162,6 +162,7 @@ noble.on("discover", async function (dev) {
           let deviceData = dev.advertisement.manufacturerData
             .toString()
             .substring(2);
+          // TODO: Update for new advertising data
           let deviceState = { s: 0, question: 0, item: 0 };
           try {
             // Set to 1 when watch is recording, 0 when ready
