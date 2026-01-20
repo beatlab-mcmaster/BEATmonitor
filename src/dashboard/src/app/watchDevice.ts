@@ -67,7 +67,7 @@ class WatchDevice extends EventEmitter {
       clearTimeout(this.timeoutConnection);
       delay = settings.delay; // Waiting for more packets, these should come quick
     } else {
-      delay = settings.delay * 3; // Waiting for first response, give it some time
+      delay = settings.delay * 5; // Waiting for first response, give it some time
     }
 
     this.timeoutConnection = setTimeout(() => {
