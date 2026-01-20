@@ -1,266 +1,292 @@
 /* https://html-color-codes.info/color-names/ */
 :root {
-  --main-bg-color: black;
-  --main-fg-color: white;
-  --secondary-bg-color: rgb(75, 75, 75);
-  --secondary-fg-color: white;
+    --main-bg-color: black;
+    --main-fg-color: white;
+    --secondary-bg-color: rgb(75, 75, 75);
+    --secondary-fg-color: white;
 }
 
 html,
 body {
-  height: 100%;
-  width: 100%;
-  margin: 0px;
-  background-color: var(--main-bg-color);
-  color: rgb(230, 230, 230);
-  font-family: Arial;
-  font-size: x-small;
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    background-color: var(--main-bg-color);
+    color: rgb(230, 230, 230);
+    font-family: Arial;
+    font-size: x-small;
 }
 
 h2,
 h3 {
-  margin: 0px;
+    margin: 0px;
 }
 
 .ui-grid {
-  border: 0px solid bisque;
+    border: 0px solid bisque;
 }
 
 .ui-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: 1fr 24fr 1fr;
-  grid-template-rows: 2fr 1fr 1fr 6fr 11fr 1fr;
-  gap: 0px 0px;
-  grid-template-areas:
-    "header header header"
-    "leftSide main-controls na"
-    "leftSide watch-list-title na"
-    "leftSide watchList na"
-    "leftSide watchList na"
-    /*"leftSide commands na"*/
-    "leftSide server-notes na"
-    "footer footer footer";
-  & > * {
-    border-left: 2px solid rgba(0, 0, 0, 0);
-    margin: 5px;
-  }
-  /* Add container hovering? */
-  /*& > :hover {*/
-  /*  border-left: 2px solid rgb(120, 120, 120);*/
-  /*}*/
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: 1fr 24fr 1fr;
+    grid-template-rows: 2fr 1fr 1fr 6fr 11fr 1fr;
+    gap: 0px 0px;
+    grid-template-areas:
+        "header header header"
+        "leftSide main-controls na"
+        "leftSide watch-list-title na"
+        "leftSide watchList na"
+        "leftSide watchList na"
+        /*"leftSide commands na"*/
+        "leftSide server-notes na"
+        "footer footer footer";
+    & > * {
+        border-left: 2px solid rgba(0, 0, 0, 0);
+        margin: 5px;
+    }
+    /* Add container hovering? */
+    /*& > :hover {*/
+    /*  border-left: 2px solid rgb(120, 120, 120);*/
+    /*}*/
 }
 
 .server-notes {
-  grid-area: server-notes;
+    grid-area: server-notes;
 }
 
 .footer {
-  grid-area: footer;
+    grid-area: footer;
 }
 
 .header {
-  grid-area: header;
+    grid-area: header;
 }
 
 .main-controls {
-  grid-area: main-controls;
+    grid-area: main-controls;
 }
 
 .watch-list-title {
-  grid-area: watch-list-title;
+    grid-area: watch-list-title;
 }
 
 .watch-list {
-  grid-area: watchList;
-  overflow-y: scroll;
+    grid-area: watchList;
+    overflow-y: scroll;
 }
 
 .graph {
-  grid-area: graph;
+    grid-area: graph;
 }
 
 .right-title {
-  grid-area: rightTitle;
+    grid-area: rightTitle;
 }
 
 .commands {
-  grid-area: commands;
-  overflow-y: scroll;
+    grid-area: commands;
+    overflow-y: scroll;
 }
 
 .info {
-  grid-area: info;
-  overflow-y: scroll;
+    grid-area: info;
+    overflow-y: scroll;
 }
 
 .left-side {
-  grid-area: leftSide;
+    grid-area: leftSide;
 }
 
 .side-link {
-  text-align: left;
-  background-color: rgb(53, 53, 53);
-  padding-left: 10px;
-  padding-right: 10px;
-  /*padding-top: 25px;*/
-  /*padding-bottom: 25px;*/
+    text-align: left;
+    background-color: rgb(53, 53, 53);
+    padding-left: 10px;
+    padding-right: 10px;
+    /*padding-top: 25px;*/
+    /*padding-bottom: 25px;*/
 }
 
 /* Watch list layout */
 
-.watchContainer {
+/*.watchContainer {
   display: grid;
-  grid-template-columns: 1fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 2fr 3fr 3fr 30fr 3fr;
-  grid-template-rows: 1fr;
-  gap: 3px 3px;
-  grid-auto-flow: row;
-  grid-template-areas: "watchName device tNearby nearby tConnected tState state tTimeSync timeSync storage progress buttons survey";
-  margin: 1px;
+
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8rem, max-content);
+
+  gap: 3px;
+  overflow-x: auto;
+  white-space: nowrap;
+
   padding: 1px;
-  background-color: rgb(37, 37, 37);
-  border: 2px solid black;
-  border-radius: 5px;
-  opacity: 60%;
-  align-items: anchor-center;
+}*/
+
+.watchContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 3fr 1fr 1fr 1fr 1fr 1fr 1fr 2fr 3fr 3fr 30fr 3fr;
+    grid-template-rows: 1fr;
+    gap: 3px 3px;
+    grid-auto-flow: row;
+    grid-template-areas: "battery watchName device tNearby nearby tConnected tState state tTimeSync timeSync storage progress buttons survey";
+    margin: 1px;
+    padding: 1px;
+    background-color: rgb(37, 37, 37);
+    border: 2px solid black;
+    border-radius: 5px;
+    opacity: 60%;
+    align-items: anchor-center;
 }
 
 .watchContainer:hover {
-  border: 2px solid red;
+    border: 2px solid red;
 }
 
 .watchContainer.watchHeader {
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 6fr 20fr;
-  grid-template-rows: 1fr;
-  grid-template-areas: "tWatch tDevice tNearby tConnected tState tTimeSync tTimeSync tTimeSync";
-  background-color: darkslategray;
-  margin-bottom: 0px;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 6fr 20fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "tWatch tDevice tNearby tConnected tState tTimeSync tTimeSync tTimeSync";
+    background-color: darkslategray;
+    margin-bottom: 0px;
 }
 
 .tWatch {
-  grid-area: tWatch;
+    grid-area: tWatch;
+}
+
+.battery {
+    grid-area: battery;
+    text-align: center;
+    padding: 5px;
 }
 
 .watchName {
-  grid-area: watchName;
+    grid-area: watchName;
 }
 
 .tDevice {
-  grid-area: tDevice;
+    grid-area: tDevice;
 }
 
 .device {
-  grid-area: device;
+    grid-area: device;
 }
 
 .tNearby {
-  grid-area: tNearby;
+    grid-area: tNearby;
 }
 
 .nearby {
-  grid-area: nearby;
+    grid-area: nearby;
 }
 
 .tConnected {
-  grid-area: tConnected;
+    grid-area: tConnected;
 }
 
 .connected {
-  grid-area: connected;
+    grid-area: connected;
 }
 
 .tState {
-  grid-area: tState;
+    grid-area: tState;
 }
 
 .state {
-  grid-area: state;
+    grid-area: state;
 }
 
 .tTimeSync {
-  grid-area: tTimeSync;
+    grid-area: tTimeSync;
 }
 
 .timeSync {
-  grid-area: timeSync;
+    grid-area: timeSync;
 }
 
 .tStorage {
-  grid-area: tStorage;
+    grid-area: tStorage;
 }
 
 .storage {
-  grid-area: storage;
+    grid-area: storage;
 }
 
 .tProgress {
-  grid-area: tProgress;
+    grid-area: tProgress;
 }
 
 .progress {
-  grid-area: progress;
+    grid-area: progress;
 }
 
 .buttons {
-  grid-area: buttons;
-  justify-self: center;
-  align-self: center;
-  padding-top: 5px;
+    grid-area: buttons;
+    justify-self: center;
+    align-self: center;
+    padding-top: 5px;
 }
 
 .survey {
-  grid-area: survey;
+    grid-area: survey;
 }
 
-.na {
-  grid-area: na;
+.advertising {
+    grid-area: advertising;
 }
 
+.device {
+    grid-area: device;
+}
+
+.settings {
+    grid-area: settings;
+}
 button {
-  background-color: rgba(150, 150, 150, 0.5);
-  color: white;
-  border: none;
-  border-radius: 3px;
-  margin-left: 3px;
-  opacity: 70%;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  font-size: x-small;
+    background-color: rgba(150, 150, 150, 0.5);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    margin-left: 3px;
+    opacity: 70%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: x-small;
 }
 
 button:hover {
-  opacity: 100%;
+    opacity: 100%;
 }
 
 [id$="recordStart"] {
-  background-color: rgb(18, 145, 17);
-  border-color: darkseagreen;
+    background-color: rgb(18, 145, 17);
+    border-color: darkseagreen;
 }
 [id$="recordStop"] {
-  background-color: rgb(170, 0, 0);
-  border-color: darksalmon;
+    background-color: rgb(170, 0, 0);
+    border-color: darksalmon;
 }
 
 .textbox {
-  background: silver;
-  border-radius: 3px;
-  margin-left: 3px;
-  vertical-align: middle;
-  font-size: x-small;
+    background: silver;
+    border-radius: 3px;
+    margin-left: 3px;
+    vertical-align: middle;
+    font-size: x-small;
 }
 
 select {
-  background-color: darkgray;
-  font-size: x-small;
+    background-color: darkgray;
+    font-size: x-small;
 }
 
 .icon-sm {
-  width: 15px;
+    width: 15px;
 }

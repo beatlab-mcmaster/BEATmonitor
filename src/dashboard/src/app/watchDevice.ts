@@ -4,31 +4,91 @@
  * contains functions to send and receive data from a watch */
 
 import fs from "fs";
-import logger from "./logger.js";
+import { logger, LogLevel } from "./logger.js";
 import { settings } from "./config.js";
 import EventEmitter from "node:events";
 import type { Peripheral } from "@abandonware/noble";
+import type * as WatchTypes from "../types/device";
+import { isDevice, isSettings } from "../guards/device.js";
+import { isRecord } from "../utils/guards.js";
 
-export type info = { [key: string]: any };
+const ADV_FLAGS = Object.freeze({
+  CHARGING: 0,
+  MANUAL_ENABLED: 1,
+  ACCEL_ENABLED: 2,
+  HR_ENABLED: 3,
+  SURVEY_ENABLED: 4,
+  STORAGE_CLEARED: 5,
+  STORAGE_FULL: 6,
+  TRASH_FULL: 7,
+});
+
+const STATE = {
+  NOT_READY: 0,
+  WAIT: 1,
+  START_RECORD: 10,
+  RECORDING: 11,
+  STOP_RECORD: 12,
+  START_STREAM: 20,
+  STREAMING: 21,
+  STOP_STREAM: 22,
+  SENDING_DATA: 100,
+  ERROR: 255,
+};
 
 class WatchDevice extends EventEmitter {
-  peripheralUpdated: boolean = false;
-  deviceId: string; // as 'BEATwatch xxxx'
-  // Watch settings
-  watchName: string; // as 'xxxx'
-  recordHR: boolean;
-  recordAccel: boolean;
-  allowManual: boolean;
-  MACid: string;
-  serialNumber: string;
-  peripheral: undefined | Peripheral;
+  // BLE Device properties
+  peripheral?: Peripheral;
   txCharacteristic: any;
   rxCharacteristic: any;
-  nearbyTimeout: ReturnType<typeof setTimeout>; // clear nearby if device out of range
-  driftTimeout: ReturnType<typeof setInterval>; // calculate drift at set interval
+  peripheralUpdated: boolean = false;
+
+  // These data are advertised and should be updated passively (through BLE advertisements)
+  advertising: WatchTypes.Advertising = {
+    charging: false, // If device attached to charger
+    manual_enabled: false, // Touch screen on watch face enabled
+    accel_enabled: false, // Record alleration
+    hr_enabled: false, // Record HR
+    survey_enabled: false, // TODO: integrate survey into BEATwatch app (instead of separate survey app)
+    storage_cleared: false, // Is the storage (almost) empty; i.e., full record capacity
+    storage_full: false, // Is the storage almost full
+    trash_full: false, // Is the trash full ('compacting storage' may be needed)
+    state: 0, // Code displaying the device state
+    battery: 0, // Battery fullness
+  };
+
+  // Data are retreived from the watch upon connection
+  device: WatchTypes.Device = {
+    program: "", // The currently loaded watch app
+    version: "", // Version of the watch app
+    firmware: "", // Device firmware
+    serial: "", // Device serial number
+    idMAC: "", // Full MAC
+    idShortMAC: "", // Formatted as 'ff00'
+    id: "", // Formatted as 'BWxxxx'
+  };
+
+  // Data are retreived from the watch upon connection
+  settings: WatchTypes.Settings = {
+    physicalId: "", // The configurable ID of the watch
+    recordHR: false, // Should be same ad advertising bit
+    recordAccel: false,
+    allowManual: false,
+    maxStorage: 0, // Report `storage_full` if used storage above this value
+    minStorage: 0, // Report `storage_cleared` if used storage below this
+    maxTrash: 0, // Report `trash_full` if trash is above this value
+    enableHighSpeed: false, // Enable 100Hz capability on Accel sensor
+    highSpeedPollRate: 0, // Set the actual poll rate (up to 100Hz)
+    showUI: false, // Display simple UI if false; detailed UI if true
+    seatNumber: "", // Configurable 'seat number' -- where the watch is located
+  };
+
+  stateReadable: string = "";
+  timeoutConnection?: ReturnType<typeof setTimeout>; // Device disconnects after timeout
+  timeoutNearby?: ReturnType<typeof setTimeout>; // clear nearby if device out of range
+  timeoutDrift?: ReturnType<typeof setInterval>; // calculate drift at set interval
   nearby: number | string = "na";
-  connected = false;
-  state: object = {};
+  connected: boolean = false;
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
   avgOffset: string | number = "Not set";
@@ -47,16 +107,31 @@ class WatchDevice extends EventEmitter {
   ) {
     super();
     if (peripheral == undefined) {
-      this.deviceId = deviceId;
-      this.watchName = watchName;
-      this.MACid = MACid;
-      this.serialNumber = serialNumber;
+      this.device.id = deviceId;
+      this.settings.physicalId = watchName;
+      this.device.idMAC = MACid;
+      this.device.serial = serialNumber;
     } else {
       this.setPeripheral(peripheral);
     }
     setTimeout(() => {
-      this.emit("watchMessage", `Watch created: ${this.deviceId}`);
-    }, 2500);
+      this.emit("watchMessage", `Watch created: ${this.device.id}`);
+    }, 2500); // TODO: Wait for frontend to load properly (timeout is temporary)
+  }
+
+  private resetTimeoutConnection(onTimeout: () => void) {
+    let delay: number;
+    if (this.timeoutConnection) {
+      clearTimeout(this.timeoutConnection);
+      delay = settings.delay; // Waiting for more packets, these should come quickly
+    } else {
+      delay = settings.delay * 5; // Waiting for first response, give it some time
+    }
+
+    this.timeoutConnection = setTimeout(() => {
+      this.timeoutConnection = undefined;
+      onTimeout();
+    }, delay);
   }
 
   get updated() {
@@ -69,25 +144,27 @@ class WatchDevice extends EventEmitter {
 
   async setPeripheral(peripheral: Peripheral) {
     this.peripheral = peripheral;
-    this.deviceId = peripheral.advertisement.localName;
+    this.device.id = peripheral.advertisement.localName;
     this.peripheralUpdated = true;
-    await this.getDeviceInfo();
-    this.writeWatchDataFile();
+    // TODO: Set timeout; if not, do this manually...
+    // await this.getDeviceInfo();
+    // this.writeWatchDataFile();
   }
 
   writeWatchDataFile() {
     let data = {
-      deviceId: this.deviceId,
-      watchName: this.watchName,
-      MACid: this.MACid,
-      serialNumber: this.serialNumber,
+      device: this.device,
+      settings: this.settings,
     };
     fs.writeFile(
-      settings.directory.watchList + this.deviceId + ".json",
+      settings.directory.watchList +
+        `${this.settings.physicalId}-` +
+        this.device.id +
+        ".json",
       JSON.stringify(data),
       (err) => {
         if (err) {
-          logger.error(`DEVICE: ${this.deviceId}: ${err}`);
+          this._log("error", `Writing file: ${err}`);
         } else {
           // file written successfully
         }
@@ -98,9 +175,12 @@ class WatchDevice extends EventEmitter {
   // return information object
   getInfo() {
     let info = {
-      DeviceID: this.deviceId,
-      watchName: this.watchName,
-      State: this.state,
+      advertising: this.advertising,
+      device: this.device,
+      settings: this.settings,
+      // deviceId: this.device.id,
+      // watchName: this.settings.physicalId,
+      // State: this.stateReadable,
       Nearby: this.nearby,
       Connected: this.connected,
       Storage: this.storage,
@@ -112,7 +192,7 @@ class WatchDevice extends EventEmitter {
 
   reconnect() {
     this.emit("watchInfoSingle", {
-      DeviceID: this.deviceId,
+      device: this.device,
       component: "reconnect",
       value: true,
     });
@@ -120,8 +200,16 @@ class WatchDevice extends EventEmitter {
 
   // return a single parameter
   getInfoSingle(component: string) {
-    let value: number | boolean | string | string[] = "";
+    let value: Object | number | boolean | string | string[] = "";
     switch (component) {
+      case "advertising":
+        let info = {
+          "advertising": this.advertising,
+          "device": this.device,
+          "settings": this.settings,
+        }
+        value = info; // TODO: rename
+        break;
       case "storage":
         value = this.storage;
         break;
@@ -132,13 +220,13 @@ class WatchDevice extends EventEmitter {
         value = this.surveyProgress;
         break;
       case "watchName":
-        value = this.watchName;
+        value = this.settings.physicalId;
         break;
       case "nearby":
         value = this.nearby;
         break;
       case "state":
-        value = this.state;
+        value = this.stateReadable;
         break;
       case "connected":
         value = this.connected;
@@ -149,8 +237,8 @@ class WatchDevice extends EventEmitter {
       default:
         value = "Unknown";
     }
-    let info: info = {
-      DeviceID: this.deviceId,
+    let info: WatchTypes.Info = {
+      device: this.device,
       component: component,
       value: value,
     };
@@ -171,8 +259,8 @@ class WatchDevice extends EventEmitter {
         difference: number[];
         roundTrip: number[];
       } = {
-        id: this.watchName,
-        device: this.deviceId,
+        id: this.settings.physicalId,
+        device: this.device.id,
         trial: [],
         offset: [],
         watchTime: [],
@@ -242,13 +330,11 @@ class WatchDevice extends EventEmitter {
             //   settings.driftPollingInterval,
             // );
             this._disconnect();
-            this._logging(
+            this._log(
+              "timeSync",
               `AverageOffset: ${this.avgOffset}, EstimatedAccuracy: ${this.timeSyncAccuracy}`,
             );
-            logger.log(
-              "timeSync",
-              `DEVICE: '${this.deviceId}' ${JSON.stringify(trialData)}`,
-            );
+            this._log("timeSync", `${JSON.stringify(trialData)}`);
           }
           setTimeout(() => {
             resolve();
@@ -272,7 +358,8 @@ class WatchDevice extends EventEmitter {
           (data: any) => {
             // data = Number(data);
             let diff = offsetTime - data;
-            this._logging(
+            this._log(
+              "info",
               `[Estimate Drift] server: ${serverTime}, avgOffset: ${this.avgOffset}, offsetTime: ${offsetTime}, data: ${data}, difference: ${diff}`,
             );
             this._disconnect();
@@ -289,12 +376,25 @@ class WatchDevice extends EventEmitter {
   //   (from the Bangle.js App Loader)
   getDeviceInfo() {
     let dataBuffer: string = "";
-    let foundSettings: Object | undefined = undefined;
     return new Promise<void>((resolve) => {
+      const finalize = (dataReceived: boolean) => {
+        if (dataReceived) {
+          this._log(
+            "info",
+            JSON.stringify({ device: this.device, settings: this.settings }),
+          );
+          this.getInfoSingle("watchName");
+        } else {
+          this._log("error", "No device information received");
+        }
+        this._disconnect();
+        resolve();
+      };
       this._connect(
         () => {
-          // 'sendWatchId' is a part of watch app, returns the watch id
+          // 'sendSettings()' is a part of watch app, returns the watch id
           this._write(`sendSettings();`);
+          this.resetTimeoutConnection(() => finalize(false));
         },
         (data: any) => {
           // Read full string from watch (JSON data)
@@ -303,27 +403,24 @@ class WatchDevice extends EventEmitter {
           line = dataBuffer.split("\r\n");
           dataBuffer = line.pop() ?? "";
           line.forEach((e) => {
+            // Try to get JSON data in response
             try {
-              foundSettings = JSON.parse(e);
+              const parsed: unknown = JSON.parse(e);
+              if (isRecord(parsed)) {
+                // We should receive 'device' and 'settings' data
+                if (isDevice(parsed)) {
+                  this.device = parsed;
+                } else if (isSettings(parsed)) {
+                  this.settings = parsed;
+                } else {
+                  this._log("warn", `Unknown JSON shape: ${e}`);
+                }
+              }
             } catch (err) {
-              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
-              foundSettings = undefined;
+              this._log("error", `Unable to parse: ${e}`);
             }
           });
-          if (foundSettings) {
-            this.watchName = foundSettings.physicalId;
-            this.recordHR = foundSettings.recordHR;
-            this.recordAccel = foundSettings.recordAccel;
-            this.allowManual = foundSettings.allowManual;
-          }
-          this._logging(
-            `Found settings for: ${this.watchName} [HR: ${this.recordHR}; ACC: ${this.recordAccel}; Manual: ${this.allowManual}]`,
-          );
-          this.getInfoSingle("watchName");
-          this._disconnect();
-          setTimeout(() => {
-            resolve();
-          }, settings.delay);
+          this.resetTimeoutConnection(() => finalize(true));
         },
       );
     });
@@ -352,21 +449,17 @@ class WatchDevice extends EventEmitter {
             try {
               // write file to computer
               fs.writeFile(
-                settings.directory.filesOnDevice + this.deviceId + ".json",
+                settings.directory.filesOnDevice + this.device.id + ".json",
                 JSON.stringify(this.storage),
                 (err) => {
                   if (err) {
-                    logger.error(
-                      `DEVICE ${this.deviceId}: Error writing file: ${err}`,
-                    );
+                    this._log("error", `Writing file: ${err}`);
                   } else {
                   }
                 },
               );
             } catch (err) {
-              logger.error(
-                `DEVICE ${this.deviceId}: Error writing file: ${err}`,
-              );
+              this._log("error", err);
             }
           }
           setTimeout(() => {
@@ -386,7 +479,7 @@ class WatchDevice extends EventEmitter {
     let recievedFile: string[] = []; // store clean lines of data
     let transferDate = Date.now().toString(); // date of transfer
     let fileType = ".csv";
-    let receivedFileName = `def_${transferDate}_${this.watchName}${fileType}`; // Default filename
+    let receivedFileName = `def_${transferDate}_${this.settings.physicalId}${fileType}`; // Default filename
     if (fileName.includes("SV")) {
       fileType = ".sv";
     } else if (fileName.includes("HR")) {
@@ -416,7 +509,7 @@ class WatchDevice extends EventEmitter {
                 receivedFileName =
                   file.File.Name?.replace(/:/g, "-")?.replace("T", "_time_") +
                   fileType;
-                this._logging(receivedFileName); // TODO: fix this!
+                this._log("info", receivedFileName); // TODO: fix this!
                 recievedFile.push(ln); // add json line to file (line 1)
               } else if (ln.includes("START_RECORD")) {
                 recievedFile.push(ln); // add json line to file (line 2)
@@ -434,13 +527,13 @@ class WatchDevice extends EventEmitter {
                     recievedFile.join("\n"),
                     (err) => {
                       if (err) {
-                        logger.error(`DEVICE: ${this.deviceId}: write> ${err}`);
+                        this._log("error", err);
                       } else {
                       }
                     },
                   );
                 } catch (err) {
-                  logger.error(`DEVICE: ${this.deviceId}: write> ${err}`);
+                  this._log("error", err);
                 }
                 this._disconnect();
               } else {
@@ -460,40 +553,37 @@ class WatchDevice extends EventEmitter {
   set setNearby(rssi: number) {
     this.nearby = rssi;
     // this.setState = 0;
-    clearTimeout(this.nearbyTimeout);
+    clearTimeout(this.timeoutNearby);
     this.getInfoSingle("nearby");
 
-    this.nearbyTimeout = setTimeout(() => {
+    this.timeoutNearby = setTimeout(() => {
       this.nearby = "na";
-      this.setState = 10;
+      // this.setState = 10;
       this.getInfoSingle("nearby");
     }, settings.nearbyTimeout);
   }
 
-  // state is set in watch's advertisement id
-  set setState(state: number) {
-    switch (state) {
-      case 0:
-        this.state = "Waiting";
-        break;
-      case 1:
-        this.state = "Recording";
-        break;
-      case 2:
-        this.state = "Sending"; // does not work (no debug yet)
-        break;
-      default:
-        this.state = "Unknown";
-    }
-    this.getInfoSingle("state");
-  }
-
-  // Track survey progress
-  set setProgress(surveyData: object) {
-    for (let i in surveyData) {
-      this.surveyProgress[i] = surveyData[i];
-    }
-    this.getInfoSingle("surveyProgress");
+  // Parse advertising values
+  setAdvertising(advertisingBuffer) {
+    // this._log("info", `Full array: ${[...advertisingBuffer]}`);
+    // TODO: Check if old style JSON string
+    // ...
+    // New style
+    let flags = advertisingBuffer[0].toString(2); // FIX: Crashes with no property!
+    // this._log("info", advertisingBuffer[0].toString(2).padStart(8, "0"))
+    this.advertising = {
+      charging: this._hasFlag(flags, ADV_FLAGS.CHARGING),
+      manual_enabled: this._hasFlag(flags, ADV_FLAGS.MANUAL_ENABLED),
+      accel_enabled: this._hasFlag(flags, ADV_FLAGS.ACCEL_ENABLED),
+      hr_enabled: this._hasFlag(flags, ADV_FLAGS.HR_ENABLED),
+      survey_enabled: this._hasFlag(flags, ADV_FLAGS.SURVEY_ENABLED),
+      storage_cleared: this._hasFlag(flags, ADV_FLAGS.STORAGE_CLEARED),
+      storage_full: this._hasFlag(flags, ADV_FLAGS.STORAGE_FULL),
+      trash_full: this._hasFlag(flags, ADV_FLAGS.TRASH_FULL),
+      state: advertisingBuffer[1],
+      battery: advertisingBuffer[2],
+    };
+    this.getInfoSingle("advertising");
   }
 
   // Call 'startRecord()' on watch
@@ -514,9 +604,9 @@ class WatchDevice extends EventEmitter {
           line.forEach((e) => {
             try {
               // response = JSON.parse(e);
-              this._logging(e);
+              this._log("info", e);
             } catch (err) {
-              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
+              this._log("error", e);
               response = undefined;
             }
           });
@@ -537,7 +627,7 @@ class WatchDevice extends EventEmitter {
           this._write("changeState(State.Buzz);");
         },
         (data) => {
-          this._logging(data);
+          this._log("info", data);
           this._disconnect();
           setTimeout(() => {
             resolve();
@@ -565,9 +655,9 @@ class WatchDevice extends EventEmitter {
           line.forEach((e) => {
             try {
               // response = JSON.parse(e);
-              this._logging(e);
+              this._log("info", e);
             } catch (err) {
-              logger.error(`DEVICE: ${this.deviceId}: ${e}`);
+              this._log("error", e);
               response = undefined;
             }
           });
@@ -601,7 +691,7 @@ class WatchDevice extends EventEmitter {
               // TODO: Process binary data
               //
               let a = new Uint8Array(ln.split(",").map(Number));
-              let obs: object | string = ""; // TODO: type
+              let obs: WatchTypes.BinaryDtHrAcc;
               if (a.byteLength == 19) {
                 let d = new DataView(a.buffer);
                 obs = {
@@ -619,8 +709,8 @@ class WatchDevice extends EventEmitter {
                 this.progressMsg = `Streaming: ${obs.hrmBpm}`; // display progress
                 this.getInfoSingle("progress");
 
-                let info: info = {
-                  DeviceID: this.deviceId,
+                let info: WatchTypes.Info = {
+                  device: this.device,
                   component: "liveData",
                   value: obs,
                 };
@@ -657,7 +747,7 @@ class WatchDevice extends EventEmitter {
           this._write(msg);
         },
         (data: string) => {
-          this._logging(data);
+          this._log("info", data);
           clearTimeout(connectionTimeout); // No end of list is sent by watch, so just timeout
           connectionTimeout = setTimeout(() => {
             this._disconnect();
@@ -677,15 +767,15 @@ class WatchDevice extends EventEmitter {
   //    https://www.espruino.com/Interfacing#node-js-javascript
   _connect(openCallback, dataCallback) {
     if (this.connected) {
-      this._logging("ERROR: Already connected!");
+      this._log("error", "Already connected!");
       return;
     }
-    this._logging(`Connecting...`);
+    this._log("info", `Connecting...`);
     if (this.peripheral) {
       try {
         this.peripheral.connect((error) => {
           if (error) {
-            this._logging("ERROR: Connecting to device");
+            this._log("error", `Connecting to device: ${error}`);
             this.peripheral = undefined;
             this.peripheralUpdated = false;
             this.connected = false;
@@ -693,7 +783,7 @@ class WatchDevice extends EventEmitter {
             return;
           }
           this.connected = true;
-          this._logging("Connected");
+          this._log("info", "Connected");
           this.getInfoSingle("connected");
           this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
@@ -706,8 +796,6 @@ class WatchDevice extends EventEmitter {
                 services,
                 settings.uuid.btUARTService, // BT protocol: see config.ts
               );
-              // this._logging("Services: " + services);
-              // this._logging("Characteristics: " + characteristics);
               this.txCharacteristic = findByUUID(
                 characteristics,
                 settings.uuid.txCharacteristic,
@@ -722,10 +810,13 @@ class WatchDevice extends EventEmitter {
                 !this.txCharacteristic ||
                 !this.rxCharacteristic
               ) {
-                this._logging("ERROR getting services/characteristics");
-                this._logging("Service " + btUARTService);
-                this._logging("TX " + this.txCharacteristic);
-                this._logging("RX " + this.rxCharacteristic);
+                this._log(
+                  "error",
+                  `Failed to get services/characteristics` +
+                    `\n\tService ${btUARTService}` +
+                    `\n\tTX ${this.txCharacteristic}` +
+                    `\n\tRX ${this.rxCharacteristic}`,
+                );
                 this.peripheral?.disconnect();
                 this.txCharacteristic = undefined;
                 this.rxCharacteristic = undefined;
@@ -736,7 +827,7 @@ class WatchDevice extends EventEmitter {
                 var s = "";
                 for (var i = 0; i < data.length; i++)
                   s += String.fromCharCode(data[i]);
-                //this._logging("rxC > " + s);
+                //this._log("rxC > " + s);
                 dataCallback(s);
               });
               this.rxCharacteristic.subscribe();
@@ -745,10 +836,11 @@ class WatchDevice extends EventEmitter {
           );
         });
       } catch (err) {
-        this._logging(err);
+        this._log("error", err);
       }
     } else {
-      this._logging("No peripheral");
+      this._log("error", "No peripheral");
+      // TODO: Refresh connection
     }
   }
 
@@ -761,7 +853,10 @@ class WatchDevice extends EventEmitter {
      * \x10 -> Disable terminal echo (on device, which stops cmd from being
      *   sent back to node) */
     let data = `\x03\x10${cmd}\n`;
-    if (!this.peripheral) throw new Error("Not connected");
+    if (!this.peripheral) {
+      throw new Error("Not connected (no peripheral)");
+      // TODO: Try to refresh connection
+    }
     let writeAgain = () => {
       if (!data.length) return;
       var d = data.substring(0, 20);
@@ -771,25 +866,29 @@ class WatchDevice extends EventEmitter {
       this.txCharacteristic.write(buf, false, writeAgain);
     };
     if (log) {
-      this._logging(`Writing '${cmd}'`);
+      this._log("info", `Writing '${cmd}'`);
     }
     writeAgain();
   }
 
   _disconnect() {
-    this._logging("Disconnecting");
+    this._log("info", "Disconnecting");
     try {
       this.peripheral?.disconnect();
     } catch (err) {
-      this._logging(err);
+      this._log("error", `Error disconnecting: ${err}`);
     }
     this.connected = false;
     this.getInfoSingle("connected");
   }
 
+  _hasFlag(mask: number, bit: number): boolean {
+    return (mask & (1 << bit)) !== 0;
+  }
+
   // Timestamp logs
-  _logging(msg: any) {
-    logger.info(`DEVICE: '${this.deviceId}' ${msg}`);
+  _log(level: LogLevel, msg: unknown) {
+    logger[level](`DEVICE: '${this.device.id}' ${String(msg)}`);
   }
 }
 

@@ -8,13 +8,15 @@
 import express from "express"; // Serve local web pages
 import { createServer } from "node:http";
 import { Server as SocketIOServer, Socket } from "socket.io"; // Communication between browser and node
-import osc from "osc";
+import osc from "osc"; // TODO: switch to node-osc (https://www.npmjs.com/package/node-osc)
 import fs from "fs";
-import logger from "./logger.js";
+import { logger, LogLevel } from "./logger.js";
 import noble from "@abandonware/noble";
-import { info, WatchDevice } from "./watchDevice.js";
+import { WatchDevice } from "./watchDevice.js";
+import type * as WatchTypes from "../types/device";
 import { settings, join } from "./config.js";
 
+const allowDuplicates = true; // For clarity--must be true for BLE scan responses!
 // Mapping to track watches
 const knownWatches = new Map();
 
@@ -89,7 +91,7 @@ fs.readdirSync(settings.directory.watchList).forEach((file) => {
     );
     // Add the found watch to known watches with watch constructor
     knownWatches.set(
-      fWatchData.deviceId,
+      fWatchData.device.id,
       new WatchDevice(undefined, fWatchData),
     );
   }
@@ -121,7 +123,7 @@ server.listen(settings.port, () => {
 noble.on("stateChange", function (state) {
   logger.info("NOBLE: stateChange -> " + state);
   if (state == "poweredOn") {
-    noble.startScanning([], true);
+    noble.startScanning([], allowDuplicates);
   }
 });
 
@@ -134,56 +136,37 @@ noble.on("scanStop", () => {
   logger.info(`NOBLE: Bluetooth scanning stopped`);
 });
 
+let firstConnectDelay = 0; // TODO: come up with better solution...
 // Event when a new device is found
 noble.on("discover", async function (dev) {
+  // TODO: remember peripheral (it's possible to attempt connecting without 'discovering' a device)
   let nearbyDevice = dev.advertisement.localName;
 
   if (typeof nearbyDevice == "undefined") return;
 
-  if (nearbyDevice.startsWith("BE")) {
-    // console.log(nearbyDevice);
-  }
   // We are only interested in Bangle.js devices
   if (
     nearbyDevice.startsWith("Bangle.js") ||
     nearbyDevice.startsWith("BEATLab") ||
+    nearbyDevice.startsWith("BW") ||
     nearbyDevice.startsWith("BEATwatch")
   ) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
-        logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
-        knownWatches.get(nearbyDevice).setPeripheral(dev);
+        setTimeout(() => {
+          logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
+          knownWatches.get(nearbyDevice).setPeripheral(dev);
+        }, firstConnectDelay);
+        // firstConnectDelay += 750;
       } else {
         knownWatches.get(nearbyDevice).setNearby = dev.rssi;
         let rssiInfo = { device: nearbyDevice, rssi: dev.rssi };
         logger.log("rssi", `${JSON.stringify(rssiInfo)}`);
         if (dev.advertisement.manufacturerData) {
-          let deviceData = dev.advertisement.manufacturerData
-            .toString()
-            .substring(2);
-          let deviceState = { s: 0, question: 0, item: 0 };
-          try {
-            // Set to 1 when watch is recording, 0 when ready
-            deviceState = JSON.parse(deviceData);
-          } catch (e) {
-            if (e instanceof SyntaxError) {
-              let deviceString = deviceData.split(",");
-              deviceState = {
-                s: Number(deviceString[0]),
-                question: Number(deviceString[1]),
-                item: Number(deviceString[2]),
-              };
-              knownWatches.get(nearbyDevice).setProgress = deviceState;
-              // console.log(JSON.stringify(deviceState));
-            } else {
-              logger.error(e.message);
-            }
-          } finally {
-            // Update the device state
-            // console.log(deviceState);
-            knownWatches.get(nearbyDevice).setState = deviceState.s;
-          }
+          let advertisingBuffer =
+            dev.advertisement.manufacturerData.subarray(2);
+          knownWatches.get(nearbyDevice).setAdvertising(advertisingBuffer);
         }
       }
     } else {
@@ -211,7 +194,9 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("btn-note", (note): void => {
-    logger.info(`SERVER NOTE: {"Performance": ${JSON.stringify(note)}}`);
+    logger.info(`Resetting firstConnectDelay ${firstConnectDelay}`);
+    firstConnectDelay = 0; // TODO: temporary
+    logger.info(`SERVER NOTE: {"Trial": ${JSON.stringify(note)}}`);
   });
 
   socket.on("ui-btn", (msg): void => {
@@ -231,6 +216,9 @@ io.on("connection", (socket: Socket) => {
       knownWatches.forEach((e) => {
         setTimeout(() => {
           switch (data.cmd) {
+            case "getName":
+              e.getDeviceInfo();
+              break;
             case "recordStart":
               e.startRecording();
               break;
@@ -262,7 +250,7 @@ io.on("connection", (socket: Socket) => {
               break;
           }
         }, delay);
-        delay += 50;
+        delay += 300;
       });
     } else {
       // Send command to single watch
@@ -332,14 +320,14 @@ io.on("connection", (socket: Socket) => {
 
   // Forward watch messages to client
   knownWatches.forEach((e) => {
-    e.on("watchMessage", (data: info) => {
+    e.on("watchMessage", (data: WatchTypes.Info) => {
       console.log("Message from watch --> ", data);
       socket.emit("watch", data);
     });
-    e.on("watchInfoAll", (data: info) => {
+    e.on("watchInfoAll", (data: WatchTypes.Info) => {
       socket.emit("watchInfoAll", data);
     });
-    e.on("watchInfoSingle", (data: info) => {
+    e.on("watchInfoSingle", (data: WatchTypes.Info) => {
       socket.emit("watchInfoSingle", data);
     });
     e.getInfo();
@@ -348,7 +336,6 @@ io.on("connection", (socket: Socket) => {
     }, 5000);
   });
 });
-
 io.engine.on("connection_error", (err) => {
   logger.error(err.req); // the request object
   logger.error(err.code); // the error code, for example 1

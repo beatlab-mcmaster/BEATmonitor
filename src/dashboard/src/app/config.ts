@@ -16,11 +16,11 @@ const settings = {
   // Directory settings
   directory: {
     // .json files are created when Bangle.js watches are found
-    watchList: join(__dirname, "watchData/watchList/"),
+    watchList: join(__dirname, "watchData/watchList/new/"),
     // .json files are created listing the files on the watch
-    filesOnDevice: join(__dirname, "watchData/filesOnDevice/"),
+    filesOnDevice: join(__dirname, "watchData/filesOnDevice/new/"),
     // .csv files are created when data are transferred from watches
-    transferredData: join(__dirname, "watchData/transferredData/"),
+    transferredData: join(__dirname, "watchData/transferredData/new/"),
   },
 
   // Server settings
@@ -44,8 +44,8 @@ const settings = {
   driftPollingInterval: 5000, // Attempt to get drift every 10 seconds
   // Verified above in testing  TODO: document test procedure
 
-  /* Bangle.js 2 Bluetooth settings 
-  UUIDs are used in bluetooth protocol to identify the services, 
+  /* Bangle.js 2 Bluetooth settings
+  UUIDs are used in bluetooth protocol to identify the services,
   characteristics, and attributes of a device. The uuids here are preset and
   unique to Bangle.js/Espurino */
   uuid: {
@@ -55,7 +55,7 @@ const settings = {
   },
   // Delay in ms before resolving a connection (prevent server from attempting
   // too many connections at once)
-  delay: 300,
+  delay: 500,
 
   // Connection settings
   nearbyTimeout: 10000, // ms to wait since last signal detected from watch before updating to 'Unknown'

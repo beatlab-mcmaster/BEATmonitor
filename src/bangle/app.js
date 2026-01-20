@@ -1,31 +1,99 @@
-// BEATmonitor -- v0.100
+// BEATmonitor -- v0.102
 // Load storage module
 const storage = require("Storage");
+
+// TODO: Turn accelerometer back off/down, and power save back on so battery drains slower
+
+// --------------------------- Advertisement management -----------------------
+
+// Bit indices
+const FLAGS = {
+  CHARGING: 0,
+  MANUAL_ENABLED: 1,
+  ACCEL_ENABLED: 2,
+  HR_ENABLED: 3,
+  SURVEY_ENABLED: 4,
+  STORAGE_CLEARED: 5,
+  STORAGE_FULL: 6,
+  TRASH_FULL: 7,
+};
+
+// Flags (Use only 8 bits)
+var flags = 0;
+
+// Possible watch states
+const STATE = {
+  NOT_READY: 0,
+  WAIT: 1,
+  START_RECORD: 10,
+  RECORDING: 11,
+  STOP_RECORD: 12,
+  START_STREAM: 20,
+  STREAMING: 21,
+  STOP_STREAM: 22,
+  SENDING_DATA: 100,
+  ERROR: 255,
+};
+
+// Functions to set/read bits
+function writeFlag(mask, bit, value) {
+  return value ? mask | (1 << bit) : mask & ~(1 << bit);
+}
+
+function readFlag(mask, bit) {
+  return (mask & (1 << bit)) !== 0;
+}
+
+// ------------------- Update advertisement broadcast -------------------------
+function setNRF() {
+  flags = writeFlag(flags, FLAGS.CHARGING, Bangle.isCharging());
+  checkStorage();
+  NRF.setAdvertising(
+    {},
+    {
+      name: `BW${device.idShortMAC}`,
+      manufacturer: 0x0590,
+      manufacturerData: new Uint8Array([
+        flags, // Single bit flags
+        status.state, // Current state
+        E.getBattery(), // Battery level (0--100)
+        255, // For future use
+      ]),
+    },
+  );
+}
+
+// --------------------------- Device status ----------------------------------
 
 // Get device information
 const device = {
   program: "BEATwatch",
-  version: "v0.100",
+  version: "v0.102",
   firmware: process.env.VERSION,
   serial: process.env.SERIAL,
   idMAC: NRF.getAddress(),
   idShortMAC: NRF.getAddress().slice(-5).replace(":", ""),
+  id: `BW${NRF.getAddress().slice(-5).replace(":", "")}`,
 };
-
-// Change default BT advertisement
-NRF.setAdvertising({}, { name: `BEATwatch ${device.idShortMAC}` });
 
 // Default settings
 var settings = {
   physicalId: "NA",
-  recordHR: true,
-  recordAccel: false,
-  allowManual: true,
+  recordHR: false,
+  recordAccel: true,
+  allowManual: false,
+  maxStorage: 90,
+  minStorage: 5,
+  maxTrash: 60,
+  enableHighSpeed: true,
+  highSpeedPollRate: 40,
+  showUI: false,
+  seatNumber: "X0",
 };
 
 // Store status
 var status = {
-  state: "WAIT",
+  state: STATE.NOT_READY,
   hrmCollected: 0,
   accelCollected: 0,
   //Timestamp is set on record
@@ -37,16 +105,34 @@ var status = {
 function updateStatus() {
   status.batteryLife = E.getBattery();
   status.freeStorage = storage.getFree();
+  setNRF();
 }
 
 function updateSettings() {
   if (storage.readJSON("beatSettings.json")) {
+    Bluetooth.println("beatSettings.json found");
     let fileSettings = storage.readJSON("beatSettings.json");
     for (let setting in fileSettings) {
-      if (settings[setting]) {
+      if (setting in settings) {
+        Bluetooth.println(
+          `replace existing setting [${setting}] with '${fileSettings[setting]}'`,
+        );
         settings[setting] = fileSettings[setting];
+      } else {
+        Bluetooth.println(`setting: ${setting}`);
       }
     }
+  }
+  Bluetooth.println(`new settings: ${JSON.stringify(settings)}`);
+  status.state = STATE.WAIT;
+  flags = writeFlag(flags, FLAGS.ACCEL_ENABLED, settings.recordAccel);
+  flags = writeFlag(flags, FLAGS.HR_ENABLED, settings.recordHR);
+  flags = writeFlag(flags, FLAGS.MANUAL_ENABLED, settings.allowManual);
+  setNRF();
+  if (settings.enableHighSpeed) {
+    // (KX022-1020: see https://www.espruino.com/datasheets/KX022-1020.pdf)
+    Bangle.accelWr(0x1b, 0x03 | 0x40); // 100hz sensor output, ODR/2 filter
+    Bangle.setPollInterval(settings.highSpeedPollRate);
   }
 }
 
@@ -88,49 +174,57 @@ const drawTouch = {
 function draw() {
   g.clear();
   g.setColor(0, 0, 0);
-  // Write time -- only update every minute
-  g.setFontVector(25);
-  g.drawString(
-    `${Date(Date.now()).toLocalISOString().slice(11, 23)}`,
-    drawTouch.x1 + 1,
-    drawTouch.y1 - 25,
-  );
+  if (settings.showUI) {
+    // Write time -- only update every minute
+    g.setFontVector(25);
+    g.drawString(
+      `${Date(Date.now()).toLocalISOString().slice(11, 23)}`,
+      drawTouch.x1 + 1,
+      drawTouch.y1 - 25,
+    );
 
-  g.setFont("12x20");
-  // Draw the program version
-  g.drawString(
-    `${device.program}-${device.version}`,
-    drawTouch.x1 - 3,
-    drawTouch.y1 - 45,
-  );
+    g.setFont("12x20");
+    // Draw the program version
+    g.drawString(
+      `${device.program}-${device.version}`,
+      drawTouch.x1 - 3,
+      drawTouch.y1 - 45,
+    );
 
-  g.setFont("12x20");
-  // Draw the physical device ID
-  g.drawString(
-    `ID:\n${settings.physicalId}`,
-    drawTouch.x1 + 110,
-    drawTouch.y1 + 25,
-  );
+    g.setFont("12x20");
+    // Draw the physical device ID
+    g.drawString(
+      `ID:\n${settings.physicalId}`,
+      drawTouch.x1 + 110,
+      drawTouch.y1 + 25,
+    );
 
-  // This is the start button area
-  g.drawRect(drawTouch.x1, drawTouch.y1, drawTouch.x2, drawTouch.y2);
+    // This is the start button area
+    g.drawRect(drawTouch.x1, drawTouch.y1, drawTouch.x2, drawTouch.y2);
 
-  // Draw the device 'state'
-  g.drawString("> " + status.state, drawTouch.x1 + 5, drawTouch.y1 + 5);
+    // Draw the device 'state'
+    g.drawString("> " + status.state, drawTouch.x1 + 5, drawTouch.y1 + 5);
 
-  // Draw the number of samples collected in record
-  g.drawString(
-    `Samples:\n${status.hrmCollected + status.accelCollected}`,
-    drawTouch.x1 + 5,
-    drawTouch.y1 + 25,
-  );
+    // Draw the number of samples collected in record
+    g.drawString(
+      `Samples:\n${status.hrmCollected + status.accelCollected}`,
+      drawTouch.x1 + 5,
+      drawTouch.y1 + 25,
+    );
 
-  // Draw serial number and MAC address
-  g.drawString(
-    `${device.serial}\n  ${device.idMAC}`,
-    drawTouch.x1 - 3,
-    drawTouch.y2 + 2,
-  );
+    // Draw serial number and MAC address
+    g.drawString(
+      `${device.serial}\n  ${device.idMAC}`,
+      drawTouch.x1 - 3,
+      drawTouch.y2 + 2,
+    );
+  } else {
+    g.setFontVector(35);
+    // Draw the physical device ID
+    g.drawString(`ID: ${settings.physicalId}`, 10, 50);
+    g.setFontVector(30);
+    g.drawString(`Seat: ${settings.seatNumber}`, 20, 120);
+  }
 
   Bangle.drawWidgets();
   // queue next draw
@@ -181,8 +275,8 @@ setWatch(
 // ---------------------------- Record to watch -------------------------------
 // Button controls
 function startRecord() {
-  if (status.state == "WAIT") {
-    status.state = "START_RECORD";
+  if (status.state == STATE.WAIT) {
+    status.state = STATE.START_RECORD;
     Bluetooth.println("Starting record");
 
     // Get current watch info
@@ -197,18 +291,19 @@ function startRecord() {
 
     // Turn on the heart rate sensor
     Bangle.setHRMPower(1);
-    status.state = "RECORDING";
-    setNRF(1);
+    status.state = STATE.RECORDING;
+    setNRF();
     draw();
   } else {
     Bluetooth.println("Not ready to start record");
   }
   Bluetooth.println(sendStatus());
+  setNRF();
 }
 
 function stopRecord() {
-  if (status.state == "RECORDING") {
-    status.state = "STOP_RECORD";
+  if (status.state == STATE.RECORDING) {
+    status.state = STATE.STOP_RECORD;
     Bluetooth.println("Stopping record");
 
     // Write end data
@@ -220,67 +315,90 @@ function stopRecord() {
     Bangle.setHRMPower(0);
     status.hrmCollected = 0;
     status.accelCollected = 0;
-    status.state = "WAIT";
-    setNRF(0);
+    status.state = STATE.WAIT;
+    setNRF();
     draw();
   } else {
     Bluetooth.println("No record to stop");
   }
   Bluetooth.println(sendStatus());
+  setNRF();
 }
 
 // ---------------------------- Send data stream ------------------------------
 function startStreaming() {
-  if (status.state == "WAIT") {
-    status.state = "START_STREAM";
+  if (status.state == STATE.WAIT) {
+    status.state = STATE.START_STREAM;
     Bluetooth.println("Starting stream");
 
     // Turn on the heart rate sensor
     Bangle.setHRMPower(1);
-    status.state = "STREAMING";
-    setNRF(3);
+    status.state = STATE.STREAMING;
+    setNRF();
     draw();
   } else {
     Bluetooth.println("Not ready to stream");
   }
+  setNRF();
 }
 
 function stopStreaming() {
-  if ((status.state = "STREAMING")) {
-    status.state = "STOP_STREAM";
+  if ((status.state = STATE.STREAMING)) {
+    status.state = STATE.STOP_STREAM;
     Bluetooth.println("Stopping stream");
 
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
     status.hrmCollected = 0;
     status.accelCollected = 0;
-    status.state = "WAIT";
-    setNRF(0);
+    status.state = STATE.WAIT;
+    setNRF();
     draw();
   } else {
     Bluetooth.println("No stream to stop");
   }
+  setNRF();
 }
 
 // ---------------------------- Configure settings ----------------------------
 function sendSettings() {
+  Bluetooth.println(JSON.stringify(device));
   Bluetooth.println(JSON.stringify(settings));
 }
 
 function setSettings(newSettings) {
-  if (status.state == "WAIT" && newSettings != undefined) {
+  if (status.state == STATE.WAIT && newSettings != undefined) {
+    if (!newSettings.physicalId) {
+      newSettings.physicalId = settings.physicalId;
+    }
     storage.writeJSON("beatSettings.json", newSettings);
     updateSettings();
     Bluetooth.println(JSON.stringify(device));
-    Bluetooth.println(sendSettings());
+    sendSettings();
   } else {
     Bluetooth.println("[INFO] Watch is busy, cannot set ID!");
   }
 }
 
 // ----------------------- Storage management / transfer ----------------------
+function checkStorage(print) {
+  let currentStorage = storage.getStats();
+  let stored = Math.round(
+    100 - (currentStorage.freeBytes / currentStorage.totalBytes) * 100,
+  );
+  let trash = Math.round(
+    (currentStorage.trashBytes / currentStorage.totalBytes) * 100,
+  );
+  flags = writeFlag(flags, FLAGS.STORAGE_FULL, stored > settings.maxStorage);
+  flags = writeFlag(flags, FLAGS.TRASH_FULL, trash > settings.maxTrash);
+  flags = writeFlag(flags, FLAGS.STORAGE_CLEARED, stored < settings.minStorage);
+  if (print) {
+    Bluetooth.println(JSON.stringify(currentStorage) + "[EOF]");
+  }
+}
+
 function sendStorage() {
-  if (status.state == "WAIT") {
+  if (status.state == STATE.WAIT) {
     let files = { files: [] };
     let storageFiles = storage.list(/(\d.-\d.T\d.:\d.:\d._...._)/); // TODO: Allow for any watchname
     storageFiles.forEach((e) => {
@@ -298,7 +416,7 @@ function sendStorage() {
 }
 
 function deleteStorage(files) {
-  if (status.state == "WAIT") {
+  if (status.state == STATE.WAIT) {
     if (files === undefined) {
       Bluetooth.println("[INFO] No files to delete are specified!");
     } else if (files == "all") {
@@ -317,9 +435,9 @@ function deleteStorage(files) {
 }
 
 function sendData(fileName) {
-  if (status.state == "WAIT") {
-    status.state = "SENDING";
-    setNRF(2);
+  if (status.state == STATE.WAIT) {
+    status.state = STATE.SENDING_DATA;
+    setNRF();
     ts = Date.now();
     f = require("Storage").open(fileName, "r");
     var len = f.getLength(); // File length (size) in bytes
@@ -337,8 +455,8 @@ function sendData(fileName) {
           " s]";
         clearInterval(progress); // stop sending progress
         clearInterval(sendData); // stop sending data
-        status.state = "WAIT";
-        setNRF(0);
+        status.state = STATE.WAIT;
+        setNRF();
       } else {
         prog += d.length; // update progress
       }
@@ -354,17 +472,6 @@ function sendData(fileName) {
   } else {
     Bluetooth.println("[INFO] Watch is busy, cannot send data!");
   }
-}
-
-// ---------------------------- Broadcast watch state -------------------------
-function setNRF(val) {
-  NRF.setAdvertising(
-    {},
-    {
-      manufacturer: 0x0590,
-      manufacturerData: JSON.stringify({ s: val }),
-    },
-  );
 }
 
 // ---------------------------- Send status  ----------------------------------
@@ -383,13 +490,6 @@ function getDrift(serverTime) {
   Bluetooth.println(watchTime);
 }
 
-// ---------------------------- Vibration -------------------------------------
-function setVibrate(time, strength) {
-  Bangle.buzz(time, strength).then(() => {
-    print("[INFO] Vibration done");
-  });
-}
-
 // ---------------------------- Record HR / PPG data --------------------------
 // Default interval is 80ms; this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
@@ -403,7 +503,7 @@ function getHR(hrm) {
 
   // We want a minimum of 35ms between samples; and filter unlikely heart rates
   if (diff > 35 && hrm.bpm > 30 && hrm.bpm < 240) {
-    if (status.state == "RECORDING") {
+    if (status.state == STATE.RECORDING) {
       // Write diff from start of record to save space
       let ts = Math.round(Date.now() - status.startTimestamp);
       // Create row with unix time and hr data
@@ -416,7 +516,7 @@ function getHR(hrm) {
       ].join(",");
       // Write to file
       data.write(obs + "\n");
-    } else if (status.state == "STREAMING") {
+    } else if (status.state == STATE.STREAMING) {
       let dbuf = new ArrayBuffer(19); // n = record size
       let d = new DataView(dbuf);
 
@@ -444,7 +544,7 @@ function getHR(hrm) {
 // ---------------------------- Record Acceleration ---------------------------
 
 function procAccel(xyz) {
-  if (settings.recordAccel & (status.state == "RECORDING")) {
+  if (settings.recordAccel & (status.state == STATE.RECORDING)) {
     let ts = Math.round(Date.now() - status.startTimestamp);
     let obs = [
       ts,
@@ -464,13 +564,18 @@ function procAccel(xyz) {
 updateSettings();
 
 // Listen for HRM values
-Bangle.on("HRM-raw", getHR);
+if (settings.recordHR) Bangle.on("HRM-raw", getHR);
 
 // Listen for accelerometer values
 Bangle.on("accel", procAccel);
 
+// Event trigger on/off charger
+Bangle.on("charging", (c) => {
+  setNRF();
+});
+
 // Call first draw to screen
 g.reset();
 Bangle.loadWidgets();
-setNRF(0);
+setNRF();
 draw();
