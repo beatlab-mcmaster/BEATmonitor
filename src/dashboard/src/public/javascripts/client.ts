@@ -40,74 +40,89 @@ socket.on("watch", (data: object) => {
 
 // Received when a watchDevice instance is created
 socket.on("watchInfoAll", (data) => {
-  if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
+  if (
+    document.getElementById(`${data.device.id}-watchContainer`) != undefined
+  ) {
     // Update existing watch
     updateWatch(data);
   } else {
     // Add new watch to list
-    addWatch("watchList", data.DeviceID);
-    addButtons(`${data.DeviceID}-buttons`, ctlButtons, data.DeviceID);
-    addSurvey(data.DeviceID);
+    addWatch("watchList", data.device.id);
+    addButtons(`${data.device.id}-buttons`, ctlButtons, data.device.id);
+    //addSurvey(data.device.id);
+    addInfo(data.device.id);
   }
 });
 
 // Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
-  if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
-    let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
+  if (
+    document.getElementById(`${data.device.id}-watchContainer`) != undefined
+  ) {
+    let elp = document.getElementById(`${data.device.id}-watchContainer`)!;
     switch (data.component) {
+      case "advertising":
+        // console.log(`element: ${data.device.id}-${data.component}, Value: ${data.value.battery}`);
+        updateText(`${data.device.id}-battery`, data.value.advertising.battery);
+        updateInfo(`${data.device.id}`, data.value);
+        let elementBattery = document.getElementById(
+          `${data.device.id}-battery`,
+        )!;
+        if (data.value.charging) {
+          elementBattery.style.backgroundColor = "green";
+        } else {
+          elementBattery.style.backgroundColor = "black";
+        }
+        // Recording
+        // states: 1 = Waiting / 11 = Recording / Sending / Unknown
+        if (data.value.state == 11) {
+          updateIcon(`${data.device.id}-tState`, icons.stateRecording);
+          elp.style.backgroundColor = "maroon";
+        } else if (data.value == 1) {
+          updateIcon(`${data.device.id}-tState`, icons.stateWaiting);
+          elp.style.backgroundColor = "rgb(37, 37, 37)";
+        } else {
+          updateIcon(`${data.device.id}-tState`, icons.stateUnknown);
+          elp.style.backgroundColor = "rgb(37, 37, 37)";
+        }
+        break;
       case "reconnect":
         elp.remove();
         break;
       case "connected":
         data.value
-          ? updateIcon(`${data.DeviceID}-tConnected`, icons.connected)
-          : updateIcon(`${data.DeviceID}-tConnected`, icons.notConnected);
+          ? updateIcon(`${data.device.id}-tConnected`, icons.connected)
+          : updateIcon(`${data.device.id}-tConnected`, icons.notConnected);
         break;
       case "progress":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.device.id}-${data.component}`, data.value);
         break;
       case "surveyProgress":
-        updateSurvey(`${data.DeviceID}`, data.value);
+        updateSurvey(`${data.device.id}`, data.value);
         break;
       case "watchName":
-        console.log(data);
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.device.id}-${data.component}`, data.value);
         break;
       case "nearby":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.device.id}-${data.component}`, data.value);
         if (data.value < 1) {
-          updateIcon(`${data.DeviceID}-tNearby`, icons.btNear);
+          updateIcon(`${data.device.id}-tNearby`, icons.btNear);
           elp.style.opacity = "100%";
         } else {
-          updateIcon(`${data.DeviceID}-tNearby`, icons.btNotNear);
+          updateIcon(`${data.device.id}-tNearby`, icons.btNotNear);
           elp.style.opacity = "70%";
         }
         break;
-      case "state":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
-        // states:  Waiting / Recording / Sending / Unknown
-        if (data.value == "Recording") {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateRecording);
-          elp.style.backgroundColor = "maroon";
-        } else if (data.value == "Waiting") {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateWaiting);
-          elp.style.backgroundColor = "rgb(37, 37, 37)";
-        } else {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateUnknown);
-          elp.style.backgroundColor = "rgb(37, 37, 37)";
-        }
-        break;
       case "timeSync":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.device.id}-${data.component}`, data.value);
         data.value != "Not synced!"
-          ? updateIcon(`${data.DeviceID}-tTimeSync`, icons.synced)
-          : updateIcon(`${data.DeviceID}-tTimeSync`, icons.notSynced);
+          ? updateIcon(`${data.device.id}-tTimeSync`, icons.synced)
+          : updateIcon(`${data.device.id}-tTimeSync`, icons.notSynced);
         break;
       case "storage":
         // Add file list to storage selector
         let updateStorage = document.getElementById(
-          `storageList-${data.DeviceID}`,
+          `storageList-${data.device.id}`,
         ) as HTMLSelectElement;
         // Remove old options
         while (updateStorage.options.length) updateStorage.remove(0);
@@ -133,7 +148,7 @@ socket.on("watchInfoSingle", (data) => {
         break;
       default:
         let updateElement = document.getElementById(
-          `${data.DeviceID}-${data.component}`,
+          `${data.device.id}-${data.component}`,
         )!;
         updateElement.textContent = data.value;
     }
@@ -143,11 +158,12 @@ socket.on("watchInfoSingle", (data) => {
 
 // Elements of a 'watchContainer' listed in UI
 const watchDivs = [
+  "battery",
+  "state",
   "watchName",
   "device",
   "nearby",
   "connected",
-  "state",
   "timeSync",
   "storage",
   "progress",
@@ -316,12 +332,22 @@ let addButtons = function (
 let addSurvey = function (deviceId): void {
   let selElement = document.getElementById(`${deviceId}-watchContainer`);
   if (selElement != null) {
-    console.log(`Creating survey container for ${deviceId}`);
     let surveyContainer = document.createElement("div");
     surveyContainer.className = "surveyContainer";
     surveyContainer.id = `${deviceId}-surveyContainer`;
     surveyContainer.textContent = "NA";
     selElement.appendChild(surveyContainer);
+  }
+};
+
+let addInfo = function (deviceId): void {
+  let selElement = document.getElementById(`${deviceId}-watchContainer`);
+  if (selElement != null) {
+    let infoContainer = document.createElement("div");
+    infoContainer.className = "infoContainer";
+    infoContainer.id = `${deviceId}-infoContainer`;
+    infoContainer.textContent = "NA";
+    selElement.appendChild(infoContainer);
   }
 };
 
@@ -349,6 +375,17 @@ let updateSurvey = function (deviceId: string, data: Object) {
     wrap.appendChild(squares);
     selElement.innerHTML = ""; // clear old content
     selElement.appendChild(wrap);
+  }
+};
+
+let updateInfo = function (deviceId: string, data: Object) {
+  let selElement = document.getElementById(`${deviceId}-infoContainer`);
+  if (selElement != null) {
+    if (data.advertising.accel_enabled) {
+      selElement.textContent = `[${data.device.id}] sr: ${data.settings.highSpeedPollRate}; st: ${data.advertising.state}; sn: ${data.settings.seatNumber}`;
+    } else {
+      selElement.textContent = `[${data.device.id}] ACCEL NOT ENABLED!`
+    }
   }
 };
 
@@ -387,17 +424,23 @@ let addWatch = function (id: string, deviceId: string) {
 
 // TODO: combine with single update function
 let updateWatch = function (data) {
-  console.log(data);
-  document.getElementById(`${data.DeviceID}-${"watchName"}`)!.textContent =
+  // console.log(data);
+  document.getElementById(`${data.device.id}-${"battery"}`)!.textContent =
+    data.advertising.battery;
+  document.getElementById(`${data.device.id}-${"watchName"}`)!.textContent =
     data.watchName;
-  document.getElementById(`${data.DeviceID}-${"device"}`)!.textContent =
-    data.DeviceID;
-  document.getElementById(`${data.DeviceID}-${"progress"}`)!.textContent =
+  document.getElementById(`${data.device.id}-${"device"}`)!.textContent =
+    data.device.id;
+  document.getElementById(`${data.device.id}-${"progress"}`)!.textContent =
     data.Progress;
-  document.getElementById(`${data.DeviceID}-${"state"}`)!.textContent =
+  document.getElementById(`${data.device.id}-${"state"}`)!.textContent =
     data.state;
-  document.getElementById(`${data.DeviceID}-${"timeSync"}`)!.textContent =
+  document.getElementById(`${data.device.id}-${"timeSync"}`)!.textContent =
     data.TimeSyncAccuracy;
+};
+
+let addAdvertising = function (id: string, data) {
+  let elementContainer = document.getElementById(`${data.device.id}-`);
 };
 
 // Create UI

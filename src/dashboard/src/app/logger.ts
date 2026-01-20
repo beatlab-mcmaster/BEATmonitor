@@ -2,7 +2,17 @@ import winston from "winston";
 import path from "path";
 import fs from "fs";
 
+export type LogLevel =
+  | "info"
+  | "warn"
+  | "error"
+  | "timeSync"
+  | "osc"
+  | "rsa"
+  | "rssi";
+
 // --- Custom levels and colors ---
+
 const customLevels = {
   levels: {
     error: 0,
@@ -61,7 +71,7 @@ const filterOnly = (level: string) =>
   winston.format((info) => (info.level === level ? info : false))();
 
 // --- Winston logger ---
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
   levels: customLevels.levels,
   transports: [
     // Console: only error, warn, info (colored)
@@ -110,5 +120,3 @@ const logger = winston.createLogger({
     }),
   ],
 });
-
-export default logger;
