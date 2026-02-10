@@ -6,21 +6,55 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { homedir } from "os";
 
 // Get root path for app
 const __dirname = join(dirname(fileURLToPath(import.meta.url)), "../");
+
+const dataRoot = "__data"
+const studyName = "applause";
+const studyInstance = "260210";
 
 const settings = {
   // Add new devices to the experiment (true) or limit to previously set devices (false)
   allowNewDevices: true,
   // Directory settings
   directory: {
+    // Log files stored here
+    logFiles: join(homedir(), dataRoot, studyName, studyInstance, "logs"),
     // .json files are created when Bangle.js watches are found
-    watchList: join(__dirname, "watchData/watchList/new/"),
+    watchList: join(
+      join(
+        homedir(),
+        dataRoot,
+        studyName,
+        studyInstance,
+        "watchData",
+        "watchList",
+      ),
+    ),
     // .json files are created listing the files on the watch
-    filesOnDevice: join(__dirname, "watchData/filesOnDevice/new/"),
+    filesOnDevice: join(
+      join(
+        homedir(),
+        dataRoot,
+        studyName,
+        studyInstance,
+        "watchData",
+        "filesOnDevice",
+      ),
+    ),
     // .csv files are created when data are transferred from watches
-    transferredData: join(__dirname, "watchData/transferredData/new/"),
+    transferredData: join(
+      join(
+        homedir(),
+        dataRoot,
+        studyName,
+        studyInstance,
+        "watchData",
+        "transferredData",
+      ),
+    ),
   },
 
   // Server settings

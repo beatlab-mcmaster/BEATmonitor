@@ -85,17 +85,17 @@ let addWatch = function (id: string, deviceId: string) {
 
 let updateWatch = function (data) {
   console.log(data);
-  document.getElementById(`${data.DeviceID}-${"watchName"}`).textContent =
+  document.getElementById(`${data.deviceId}-${"watchName"}`).textContent =
     data.watchName;
-  document.getElementById(`${data.DeviceID}-${"device"}`).textContent =
-    data.DeviceID;
-  document.getElementById(`${data.DeviceID}-${"progress"}`).textContent =
+  document.getElementById(`${data.deviceId}-${"device"}`).textContent =
+    data.deviceId;
+  document.getElementById(`${data.deviceId}-${"progress"}`).textContent =
     data.Progress;
-  document.getElementById(`${data.DeviceID}-${"connected"}`).textContent =
+  document.getElementById(`${data.deviceId}-${"connected"}`).textContent =
     data.Connected;
-  document.getElementById(`${data.DeviceID}-${"state"}`).textContent =
+  document.getElementById(`${data.deviceId}-${"state"}`).textContent =
     data.state;
-  document.getElementById(`${data.DeviceID}-${"timeSync"}`).textContent =
+  document.getElementById(`${data.deviceId}-${"timeSync"}`).textContent =
     data.TimeSyncAccuracy;
 };
 

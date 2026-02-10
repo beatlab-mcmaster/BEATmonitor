@@ -41,13 +41,13 @@ socket.on("watch", (data: object) => {
 
 // Received when a watchDevice instance is created
 socket.on("watchInfoAll", (data) => {
-  if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
+  if (document.getElementById(`${data.deviceId}-watchContainer`) != undefined) {
     // Update existing watch
     updateWatch(data);
   } else {
     // Add new watch to list
-    addWatch("watchList", data.DeviceID);
-    addButtons(`${data.DeviceID}-buttons`, ctlButtons, data.DeviceID);
+    addWatch("watchList", data.deviceId);
+    addButtons(`${data.deviceId}-buttons`, ctlButtons, data.deviceId);
   }
 });
 
@@ -55,55 +55,55 @@ let sample = 0;
 
 // Update UI as single watch properties are updated
 socket.on("watchInfoSingle", (data) => {
-  if (document.getElementById(`${data.DeviceID}-watchContainer`) != undefined) {
-    let elp = document.getElementById(`${data.DeviceID}-watchContainer`)!;
+  if (document.getElementById(`${data.deviceId}-watchContainer`) != undefined) {
+    let elp = document.getElementById(`${data.deviceId}-watchContainer`)!;
     switch (data.component) {
       case "connected":
         data.value
-          ? updateIcon(`${data.DeviceID}-tConnected`, icons.connected)
-          : updateIcon(`${data.DeviceID}-tConnected`, icons.notConnected);
+          ? updateIcon(`${data.deviceId}-tConnected`, icons.connected)
+          : updateIcon(`${data.deviceId}-tConnected`, icons.notConnected);
         break;
       case "progress":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.deviceId}-${data.component}`, data.value);
         break;
       case "watchName":
         console.log(data);
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.deviceId}-${data.component}`, data.value);
         break;
       case "nearby":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.deviceId}-${data.component}`, data.value);
         if (data.value < 1) {
-          updateIcon(`${data.DeviceID}-tNearby`, icons.btNear);
+          updateIcon(`${data.deviceId}-tNearby`, icons.btNear);
           elp.style.opacity = "100%";
         } else {
-          updateIcon(`${data.DeviceID}-tNearby`, icons.btNotNear);
+          updateIcon(`${data.deviceId}-tNearby`, icons.btNotNear);
           elp.style.opacity = "70%";
         }
         break;
       case "state":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.deviceId}-${data.component}`, data.value);
         // states:  Waiting / Recording / Sending / Unknown
         if (data.value == "Recording") {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateRecording);
+          updateIcon(`${data.deviceId}-tState`, icons.stateRecording);
           elp.style.backgroundColor = "maroon";
         } else if (data.value == "Waiting") {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateWaiting);
+          updateIcon(`${data.deviceId}-tState`, icons.stateWaiting);
           elp.style.backgroundColor = "rgb(37, 37, 37)";
         } else {
-          updateIcon(`${data.DeviceID}-tState`, icons.stateUnknown);
+          updateIcon(`${data.deviceId}-tState`, icons.stateUnknown);
           elp.style.backgroundColor = "rgb(37, 37, 37)";
         }
         break;
       case "timeSync":
-        updateText(`${data.DeviceID}-${data.component}`, data.value);
+        updateText(`${data.deviceId}-${data.component}`, data.value);
         data.value != "Not synced!"
-          ? updateIcon(`${data.DeviceID}-tTimeSync`, icons.synced)
-          : updateIcon(`${data.DeviceID}-tTimeSync`, icons.notSynced);
+          ? updateIcon(`${data.deviceId}-tTimeSync`, icons.synced)
+          : updateIcon(`${data.deviceId}-tTimeSync`, icons.notSynced);
         break;
       case "storage":
         // Add file list to storage selector
         let updateStorage = document.getElementById(
-          `storageList-${data.DeviceID}`,
+          `storageList-${data.deviceId}`,
         )!;
         data.value.forEach((e: string) => {
           console.log(e);
@@ -123,7 +123,7 @@ socket.on("watchInfoSingle", (data) => {
         break;
       default:
         let updateElement = document.getElementById(
-          `${data.DeviceID}-${data.component}`,
+          `${data.deviceId}-${data.component}`,
         )!;
         updateElement.textContent = data.value;
     }
@@ -339,15 +339,15 @@ let addWatch = function (id: string, deviceId: string) {
 // TODO: combine with single update function
 let updateWatch = function (data) {
   console.log(data);
-  document.getElementById(`${data.DeviceID}-${"watchName"}`)!.textContent =
+  document.getElementById(`${data.deviceId}-${"watchName"}`)!.textContent =
     data.watchName;
-  document.getElementById(`${data.DeviceID}-${"device"}`)!.textContent =
-    data.DeviceID;
-  document.getElementById(`${data.DeviceID}-${"progress"}`)!.textContent =
+  document.getElementById(`${data.deviceId}-${"device"}`)!.textContent =
+    data.deviceId;
+  document.getElementById(`${data.deviceId}-${"progress"}`)!.textContent =
     data.Progress;
-  document.getElementById(`${data.DeviceID}-${"state"}`)!.textContent =
+  document.getElementById(`${data.deviceId}-${"state"}`)!.textContent =
     data.state;
-  document.getElementById(`${data.DeviceID}-${"timeSync"}`)!.textContent =
+  document.getElementById(`${data.deviceId}-${"timeSync"}`)!.textContent =
     data.TimeSyncAccuracy;
 };
 
@@ -405,16 +405,16 @@ var dataLength = 30; // number of dataPoints visible at any point
 
 var updateChart = function (data) {
   // If new device, add to chart
-  if (data.DeviceID in devices) {
-    devices[`${data.DeviceID}`].push({
+  if (data.deviceId in devices) {
+    devices[`${data.deviceId}`].push({
       x: data.value.dt,
       y: data.value.hrmBpm,
       // y: data.value.hrmFilt,
     });
   } else {
     console.log(data);
-    console.log(`creating new device: ${data.DeviceID}`);
-    devices[`${data.DeviceID}`] = [
+    console.log(`creating new device: ${data.deviceId}`);
+    devices[`${data.deviceId}`] = [
       {
         x: data.value.dt,
         // y: data.value.hrmFilt,
@@ -423,10 +423,10 @@ var updateChart = function (data) {
     ];
     chart.options.data.push({
       type: "line",
-      name: data.DeviceID,
+      name: data.deviceId,
       showInLegend: true,
-      legendText: data.DeviceID,
-      dataPoints: devices[`${data.DeviceID}`],
+      legendText: data.deviceId,
+      dataPoints: devices[`${data.deviceId}`],
       markerType: "none",
     });
   }
