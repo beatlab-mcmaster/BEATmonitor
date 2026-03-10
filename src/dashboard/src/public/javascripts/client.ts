@@ -8,6 +8,9 @@ import { io } from "../../../node_modules/socket.io/client-dist/socket.io.esm.mi
 // Message handling
 const socket = io();
 
+// Track total number of watches
+var totalDevices = 0;
+
 socket.on("connect", () => {
   // If connected to server
   console.log("Socket connected");
@@ -47,6 +50,8 @@ socket.on("watchInfoAll", (data) => {
     updateWatch(data);
   } else {
     // Add new watch to list
+    totalDevices += 1;
+    updateTotalDevices(totalDevices);
     addWatch("watchList", data.device.id);
     addButtons(`${data.device.id}-buttons`, ctlButtons, data.device.id);
     //addSurvey(data.device.id);
@@ -62,23 +67,28 @@ socket.on("watchInfoSingle", (data) => {
     let elp = document.getElementById(`${data.device.id}-watchContainer`)!;
     switch (data.component) {
       case "advertising":
-        // console.log(`element: ${data.device.id}-${data.component}, Value: ${data.value.battery}`);
+        // console.log(`element: ${data.device.id}-${data.component}, Value: ${data.value.advertising.battery}`);
         updateText(`${data.device.id}-battery`, data.value.advertising.battery);
         updateInfo(`${data.device.id}`, data.value);
         let elementBattery = document.getElementById(
           `${data.device.id}-battery`,
         )!;
-        if (data.value.charging) {
+        if (data.value.advertising.charging) {
           elementBattery.style.backgroundColor = "green";
+        } else if (data.value.advertising.battery <= 50) {
+          elementBattery.style.backgroundColor = "red";
+        } else if (data.value.advertising.battery <= 75) {
+          elementBattery.style.backgroundColor = "yellow";
         } else {
           elementBattery.style.backgroundColor = "black";
         }
-        // Recording
-        // states: 1 = Waiting / 11 = Recording / Sending / Unknown
-        if (data.value.state == 11) {
+        if (data.value.advertising.state == 11) { // Recording
           updateIcon(`${data.device.id}-tState`, icons.stateRecording);
           elp.style.backgroundColor = "maroon";
-        } else if (data.value == 1) {
+        } else if (data.value.advertising.state == 100) { // Transferring
+          elp.style.backgroundColor = "khaki";
+          elp.style.color = "black";
+        } else if (data.value.advertising.state == 1) { // Ready/waiting
           updateIcon(`${data.device.id}-tState`, icons.stateWaiting);
           elp.style.backgroundColor = "rgb(37, 37, 37)";
         } else {
@@ -88,6 +98,8 @@ socket.on("watchInfoSingle", (data) => {
         break;
       case "reconnect":
         elp.remove();
+        totalDevices -= 1;
+        updateTotalDevices(totalDevices);
         break;
       case "connected":
         data.value
@@ -254,6 +266,14 @@ let updateText = function (id: string, txt: string): void {
   el.textContent = txt;
 };
 
+// Update number of devices when added/removed
+let updateTotalDevices = function (nDevices: number): void {
+  let selElement = document.getElementById("totalDevices");
+  if (selElement) {
+    selElement.textContent = `${totalDevices}`;
+  }
+};
+
 // Object sent to server when buttons are clicked
 let emitCommand = function (cmd: string, device: string, msg: string): void {
   console.log(`emitCommand: cmd=${cmd}; device=${device}; msg=${msg}`);
@@ -382,9 +402,9 @@ let updateInfo = function (deviceId: string, data: Object) {
   let selElement = document.getElementById(`${deviceId}-infoContainer`);
   if (selElement != null) {
     if (data.advertising.accel_enabled) {
-      selElement.textContent = `[${data.device.id}] sr: ${data.settings.highSpeedPollRate}; st: ${data.advertising.state}; sn: ${data.settings.seatNumber}`;
+      selElement.textContent = `sr: ${data.settings.highSpeedPollRate}; st: ${data.advertising.state}; sn: ${data.settings.seatNumber}`;
     } else {
-      selElement.textContent = `[${data.device.id}] ACCEL NOT ENABLED!`
+      selElement.textContent = `[${data.device.id}] ACCEL NOT ENABLED!`;
     }
   }
 };
@@ -428,13 +448,13 @@ let updateWatch = function (data) {
   document.getElementById(`${data.device.id}-${"battery"}`)!.textContent =
     data.advertising.battery;
   document.getElementById(`${data.device.id}-${"watchName"}`)!.textContent =
-    data.watchName;
+    data.settings.physicalId;
   document.getElementById(`${data.device.id}-${"device"}`)!.textContent =
     data.device.id;
   document.getElementById(`${data.device.id}-${"progress"}`)!.textContent =
     data.Progress;
   document.getElementById(`${data.device.id}-${"state"}`)!.textContent =
-    data.state;
+    data.advertising.state;
   document.getElementById(`${data.device.id}-${"timeSync"}`)!.textContent =
     data.TimeSyncAccuracy;
 };

@@ -5,7 +5,7 @@
 
 import fs from "fs";
 import { logger, LogLevel } from "./logger.js";
-import { settings } from "./config.js";
+import { settings, join } from "./config.js";
 import EventEmitter from "node:events";
 import type { Peripheral } from "@abandonware/noble";
 import type * as WatchTypes from "../types/device";
@@ -70,7 +70,7 @@ class WatchDevice extends EventEmitter {
 
   // Data are retreived from the watch upon connection
   settings: WatchTypes.Settings = {
-    physicalId: "", // The configurable ID of the watch
+    physicalId: "Unknown", // The configurable ID of the watch
     recordHR: false, // Should be same ad advertising bit
     recordAccel: false,
     allowManual: false,
@@ -88,7 +88,7 @@ class WatchDevice extends EventEmitter {
   timeoutNearby?: ReturnType<typeof setTimeout>; // clear nearby if device out of range
   timeoutDrift?: ReturnType<typeof setInterval>; // calculate drift at set interval
   nearby: number | string = "na";
-  connected: boolean = false;
+  connected: boolean | string = false;
   storage: string[] = ["na"]; // list of storage files on device
   // downloads = []; // Hold stored data (currently not used)
   avgOffset: string | number = "Not set";
@@ -98,23 +98,34 @@ class WatchDevice extends EventEmitter {
 
   constructor(
     peripheral: undefined | Peripheral = undefined,
-    {
-      deviceId = "Unknown",
-      watchName = "Unknown",
-      MACid = "Unknown",
-      serialNumber = "Unknown",
-    } = {},
+    deviceInfo: undefined | object = undefined,
   ) {
     super();
-    if (peripheral == undefined) {
-      this.device.id = deviceId;
-      this.settings.physicalId = watchName;
-      this.device.idMAC = MACid;
-      this.device.serial = serialNumber;
-    } else {
+    if (deviceInfo) {
+      this.device = deviceInfo.device;
+      this.settings = deviceInfo.settings;
+      if (deviceInfo.timeSync) {
+        let timeNow = new Date();
+        let timeUpdated = new Date(deviceInfo.updatedOn);
+        let timeDiff = timeNow.getTime() - timeUpdated.getTime();
+        // console.log(`accuracy: ${deviceInfo.timeSync.accuracy};\noffset: ${deviceInfo.timeSync.offset}`)
+        if (
+          timeDiff < 20 * 1000 &&
+          typeof deviceInfo.timeSync.accuracy === "number" &&
+          Number.isFinite(deviceInfo.timeSync.accuracy)
+        ) {
+          this._log("info", "Using recent synchronization values");
+          this.timeSyncAccuracy = deviceInfo.timeSync.accuracy;
+          this.avgOffset = deviceInfo.timeSync.offset;
+        }
+      }
+    }
+    if (peripheral) {
       this.setPeripheral(peripheral);
+      this._log("info", "Peripheral set");
     }
     setTimeout(() => {
+      // FIX: does not emit when reconnecting???
       this.emit("watchMessage", `Watch created: ${this.device.id}`);
     }, 2500); // TODO: Wait for frontend to load properly (timeout is temporary)
   }
@@ -146,21 +157,33 @@ class WatchDevice extends EventEmitter {
     this.peripheral = peripheral;
     this.device.id = peripheral.advertisement.localName;
     this.peripheralUpdated = true;
-    // TODO: Set timeout; if not, do this manually...
-    // await this.getDeviceInfo();
-    // this.writeWatchDataFile();
+    await this.getDeviceInfo();
   }
 
   writeWatchDataFile() {
+    if (this.device.id == "Unknown" || this.settings.physicalId == "Unknown") {
+      logger.log(
+        "error",
+        `deviceId: ${this.device.id}; physicalId: ${this.settings.physicalId}`,
+      );
+      return;
+    }
+    let date = new Date();
     let data = {
+      updatedOn: date.toISOString(),
       device: this.device,
       settings: this.settings,
+      files: this.storage,
+      timeSync: {
+        accuracy: this.timeSyncAccuracy,
+        offset: this.avgOffset,
+      },
     };
     fs.writeFile(
-      settings.directory.watchList +
-        `${this.settings.physicalId}-` +
-        this.device.id +
-        ".json",
+      join(
+        settings.directory.watchList,
+        `${this.settings.physicalId}-${this.device.id}.json`,
+      ),
       JSON.stringify(data),
       (err) => {
         if (err) {
@@ -178,9 +201,6 @@ class WatchDevice extends EventEmitter {
       advertising: this.advertising,
       device: this.device,
       settings: this.settings,
-      // deviceId: this.device.id,
-      // watchName: this.settings.physicalId,
-      // State: this.stateReadable,
       Nearby: this.nearby,
       Connected: this.connected,
       Storage: this.storage,
@@ -196,6 +216,9 @@ class WatchDevice extends EventEmitter {
       component: "reconnect",
       value: true,
     });
+    // TODO: clear timers?
+    this._disconnect();
+    this.removeAllListeners();
   }
 
   // return a single parameter
@@ -204,10 +227,10 @@ class WatchDevice extends EventEmitter {
     switch (component) {
       case "advertising":
         let info = {
-          "advertising": this.advertising,
-          "device": this.device,
-          "settings": this.settings,
-        }
+          advertising: this.advertising,
+          device: this.device,
+          settings: this.settings,
+        };
         value = info; // TODO: rename
         break;
       case "storage":
@@ -273,6 +296,7 @@ class WatchDevice extends EventEmitter {
       let offset = settings.startOffset; // Estimate time to transmit/write time on watch (ms)
       this._connect(
         () => {
+          this._updateConnectionStatus("setTime()");
           // Get server time and send to watch
           timeStart = new Date();
           this._write(
@@ -335,6 +359,7 @@ class WatchDevice extends EventEmitter {
               `AverageOffset: ${this.avgOffset}, EstimatedAccuracy: ${this.timeSyncAccuracy}`,
             );
             this._log("timeSync", `${JSON.stringify(trialData)}`);
+            this.writeWatchDataFile();
           }
           setTimeout(() => {
             resolve();
@@ -352,6 +377,7 @@ class WatchDevice extends EventEmitter {
         let offsetTime = (serverTime.getTime() + this.avgOffset) / 1000;
         this._connect(
           () => {
+            this._updateConnectionStatus("getDriftEstimate()");
             // 'sendWatchId' is a part of watch app, returns the watch id
             this._write(`getDrift(${offsetTime});`);
           },
@@ -383,6 +409,7 @@ class WatchDevice extends EventEmitter {
             "info",
             JSON.stringify({ device: this.device, settings: this.settings }),
           );
+          this.writeWatchDataFile();
           this.getInfoSingle("watchName");
         } else {
           this._log("error", "No device information received");
@@ -392,6 +419,7 @@ class WatchDevice extends EventEmitter {
       };
       this._connect(
         () => {
+          this._updateConnectionStatus("getDeviceInfo()");
           // 'sendSettings()' is a part of watch app, returns the watch id
           this._write(`sendSettings();`);
           this.resetTimeoutConnection(() => finalize(false));
@@ -432,6 +460,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this._updateConnectionStatus("getStorageInfo()");
           this._write(`if(1)sendStorage();`);
         },
         (data: string) => {
@@ -449,7 +478,10 @@ class WatchDevice extends EventEmitter {
             try {
               // write file to computer
               fs.writeFile(
-                settings.directory.filesOnDevice + this.device.id + ".json",
+                join(
+                  settings.directory.filesOnDevice,
+                  `${this.device.id}.json`,
+                ),
                 JSON.stringify(this.storage),
                 (err) => {
                   if (err) {
@@ -488,6 +520,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this.connected = `getStorageInfo(${fileName})`;
           this._write(`if(1)sendData('${fileName}')`); // TODO: Why 'if(1)' -- no docs...
         },
         (data: string) => {
@@ -523,7 +556,7 @@ class WatchDevice extends EventEmitter {
                 try {
                   // write file to computer
                   fs.writeFile(
-                    settings.directory.transferredData + receivedFileName,
+                    settings.directory.transferredData + "/" + receivedFileName,
                     recievedFile.join("\n"),
                     (err) => {
                       if (err) {
@@ -569,8 +602,10 @@ class WatchDevice extends EventEmitter {
     // TODO: Check if old style JSON string
     // ...
     // New style
-    let flags = advertisingBuffer[0].toString(2); // FIX: Crashes with no property!
-    // this._log("info", advertisingBuffer[0].toString(2).padStart(8, "0"))
+    const b0 = advertisingBuffer?.[0];
+    if (typeof b0 !== "number") return; // or log + return
+    const flags = b0 & 0xff; // keep it as a byte
+    // this._log("info", `flags(bin)=${flags.toString(2).padStart(8, "0")}`);
     this.advertising = {
       charging: this._hasFlag(flags, ADV_FLAGS.CHARGING),
       manual_enabled: this._hasFlag(flags, ADV_FLAGS.MANUAL_ENABLED),
@@ -593,6 +628,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this._updateConnectionStatus("startRecording()");
           this._write("startRecord();");
         },
         (data) => {
@@ -624,6 +660,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this._updateConnectionStatus("sendSurvey()");
           this._write("changeState(State.Buzz);");
         },
         (data) => {
@@ -644,6 +681,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this._updateConnectionStatus("stopRecording()");
           this._write("stopRecord();");
         },
         (data: string) => {
@@ -677,6 +715,7 @@ class WatchDevice extends EventEmitter {
     return new Promise<void>((resolve) => {
       this._connect(
         () => {
+          this._updateConnectionStatus("startStreaming()");
           this._write("startStreaming();");
         },
         (data: string) => {
@@ -744,6 +783,7 @@ class WatchDevice extends EventEmitter {
       let connectionTimeout: ReturnType<typeof setTimeout>;
       this._connect(
         () => {
+          this._updateConnectionStatus("sendEvent()");
           this._write(msg);
         },
         (data: string) => {
@@ -762,15 +802,14 @@ class WatchDevice extends EventEmitter {
 
   // Connect function -- slightly modified (added logging and some error
   // handling) from:
-  //    https://www.espruino.com/Auto+Data+Download
-  // and
+  //    https://www.espruino.com/Auto+Data+Download and
   //    https://www.espruino.com/Interfacing#node-js-javascript
   _connect(openCallback, dataCallback) {
     if (this.connected) {
-      this._log("error", "Already connected!");
+      this._log("error", `Already connected! [${this.connected}]`);
       return;
     }
-    this._log("info", `Connecting...`);
+    this._log("info", `Trying to connect...`);
     if (this.peripheral) {
       try {
         this.peripheral.connect((error) => {
@@ -782,9 +821,7 @@ class WatchDevice extends EventEmitter {
             this.getInfoSingle("connected");
             return;
           }
-          this.connected = true;
-          this._log("info", "Connected");
-          this.getInfoSingle("connected");
+          this._updateConnectionStatus("initializing");
           this.peripheral?.discoverAllServicesAndCharacteristics(
             (error, services, characteristics) => {
               function findByUUID(list: any, uuid: string) {
@@ -844,6 +881,15 @@ class WatchDevice extends EventEmitter {
     }
   }
 
+  _updateConnectionStatus(status: boolean | string) {
+    if (status) {
+      this._log("info", `Connection: ${status}`);
+    } else {
+      this._log("info", "No connection");
+    }
+    this.getInfoSingle("connected");
+  }
+
   /** Formats command and sends to watch
    * @param cmd - command string to send to watch
    * @param log - option to supress writing to log file
@@ -888,7 +934,7 @@ class WatchDevice extends EventEmitter {
 
   // Timestamp logs
   _log(level: LogLevel, msg: unknown) {
-    logger[level](`DEVICE: '${this.device.id}' ${String(msg)}`);
+    logger[level](`${this.device.id} [${this.settings.physicalId}] ${String(msg)}`);
   }
 }
 

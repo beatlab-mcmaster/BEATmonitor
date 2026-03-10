@@ -1,4 +1,5 @@
 import winston from "winston";
+import { settings } from "./config.js";
 import path from "path";
 import fs from "fs";
 
@@ -38,7 +39,7 @@ winston.addColors(customLevels.colors);
 
 // --- Create folder for today's logs ---
 const today = new Date().toISOString().split("T")[0];
-const logDir = path.join("logs", today);
+const logDir = path.join(settings.directory.logFiles);
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 
 // --- Helper: ISO timestamp with milliseconds ---

@@ -33,6 +33,15 @@ const udpPort = new osc.UDPPort({
   metadata: true,
 });
 
+udpPort.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    logger.log("error", `OSC port ${udpPort.options.localPort} already in use`);
+    // decide what to do (see below)
+  } else {
+    logger.log("error", "OSC error:", err);
+  }
+});
+
 udpPort.on("ready", () => {
   logger.log("osc", `Listening for OSC over UDP on ${settings.OSCport}`);
 });
@@ -90,6 +99,7 @@ fs.readdirSync(settings.directory.watchList).forEach((file) => {
       fs.readFileSync(join(settings.directory.watchList, file)).toString(),
     );
     // Add the found watch to known watches with watch constructor
+    // console.log(JSON.stringify(fWatchData));
     knownWatches.set(
       fWatchData.device.id,
       new WatchDevice(undefined, fWatchData),
@@ -136,7 +146,6 @@ noble.on("scanStop", () => {
   logger.info(`NOBLE: Bluetooth scanning stopped`);
 });
 
-let firstConnectDelay = 0; // TODO: come up with better solution...
 // Event when a new device is found
 noble.on("discover", async function (dev) {
   // TODO: remember peripheral (it's possible to attempt connecting without 'discovering' a device)
@@ -154,11 +163,8 @@ noble.on("discover", async function (dev) {
     if (knownWatches.has(nearbyDevice)) {
       // Update known previously detected watches
       if (!knownWatches.get(nearbyDevice).updated) {
-        setTimeout(() => {
-          logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
-          knownWatches.get(nearbyDevice).setPeripheral(dev);
-        }, firstConnectDelay);
-        // firstConnectDelay += 750;
+        logger.info(`NOBLE: Updating existing watch '${nearbyDevice}'`);
+        knownWatches.get(nearbyDevice).setPeripheral(dev);
       } else {
         knownWatches.get(nearbyDevice).setNearby = dev.rssi;
         let rssiInfo = { device: nearbyDevice, rssi: dev.rssi };
@@ -256,8 +262,8 @@ io.on("connection", (socket: Socket) => {
       // Send command to single watch
       switch (data.cmd) {
         case "reconnect":
-          knownWatches.get(data.device).reconnect();
           logger.info(`Reconnecting: ${data.device}`);
+          knownWatches.get(data.device).reconnect();
           knownWatches.delete(data.device);
           break;
         case "getName":
@@ -299,13 +305,15 @@ io.on("connection", (socket: Socket) => {
         case "verifyFiles":
           transferredFiles = readTransferredFiles();
           let deviceFiles = knownWatches.get(data.device).storage;
+          // TODO: Handle undefined 'storage'
           deviceFiles.files.forEach((file) => {
             // Match file name and size
             let match = transferredFiles.find(
               (e) =>
                 e.name.replace(/\.sv|\.hr|\.csv/g, "").replace("_time_", "T") ==
                   file.name.replace(/HR|SV/g, "").replaceAll(":", "-") &&
-                e.size == file.size,
+                (e.size == file.size || e.size == file.size - 1),
+              // TODO: Above: not sure why, some files are 1 byte smaller than size on watch
             );
             if (match) {
               console.log("Matched file: ", match);
@@ -345,3 +353,13 @@ io.engine.on("connection_error", (err) => {
 
 // TODO: Resume function -- search for timestamp
 // TODO: Timesync when finished recording
+
+// Cleanly shutdown server when exiting
+const shutdown = () => {
+  logger.log("info", "Shutting down...");
+  udpPort?.close();
+  process.exit(0);
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

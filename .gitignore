@@ -198,3 +198,4 @@ cython_debug/
 .pypirc
 .Rproj.user
 src/analysis/example_results
+.zed
