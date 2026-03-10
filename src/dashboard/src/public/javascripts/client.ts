@@ -82,12 +82,13 @@ socket.on("watchInfoSingle", (data) => {
         } else {
           elementBattery.style.backgroundColor = "black";
         }
-        // Recording
-        // states: 1 = Waiting / 11 = Recording / 100 = Sending / Unknown
-        if (data.value.advertising.state == 11) {
+        if (data.value.advertising.state == 11) { // Recording
           updateIcon(`${data.device.id}-tState`, icons.stateRecording);
           elp.style.backgroundColor = "maroon";
-        } else if (data.value.advertising.state == 1) {
+        } else if (data.value.advertising.state == 100) { // Transferring
+          elp.style.backgroundColor = "khaki";
+          elp.style.color = "black";
+        } else if (data.value.advertising.state == 1) { // Ready/waiting
           updateIcon(`${data.device.id}-tState`, icons.stateWaiting);
           elp.style.backgroundColor = "rgb(37, 37, 37)";
         } else {

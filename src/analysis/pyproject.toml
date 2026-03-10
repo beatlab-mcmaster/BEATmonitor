@@ -19,4 +19,4 @@ dependencies = [
 typeCheckingMode = "basic"
 
 [tool.uv.sources]
-beatwatch-process = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git" }
+beatwatch-process = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git", rev="pytest" }
