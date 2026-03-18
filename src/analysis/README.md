@@ -30,11 +30,17 @@ In the Terminal, navigate to the analysis directory:
 cd <project root directory>/src/analysis/
 ```
 
-Then run the following commands
+Then run the following commands:
 
 ```sh
 uv sync
 ```
+
+This installs all required dependencies for analysing watch data. Primary packages needed are:
+
+- [beatwatch_process](https://github.com/beatlab-mcmaster/beatwatch_process): module with functions for parsing, cleaning, signal processing of heart rate, acceleration, and survey response data written to Bangle.js smartwatches while recording.
+- [jupyter lab](https://jupyter.org/): code notebooks for developing analyses. The tutorial examples are provided in this format.
+- [holoviews](https://holoviews.org/): visualisation library for interactive plotting.
 
 ### Activate environment
 
@@ -60,7 +66,7 @@ uv run process_acceleration.py
 
 ## Template tutorial
 
-Once the environment is activated, you can step through an example tutorial script in Jupyter Lab. First launch Jupyter Lab by running the following command in the terminal:
+Once the environment is synchronized, you can step through an example tutorial script in Jupyter Lab. First launch Jupyter Lab by running the following command in the terminal:
 
 ```sh
 uv run jupyter lab
@@ -79,5 +85,3 @@ Follow the instructions in the notebook: `postprocessing_template.ipynb`
 Guide to convert [Jupyter notebooks to Python](https://linuxhaxor.net/code/convert-jupyter-notebook-python.html)
 
 Guide to [Python project setup](https://goodresearch.dev/setup)
-
-## Dependencies
