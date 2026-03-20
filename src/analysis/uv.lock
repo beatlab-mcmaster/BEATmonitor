@@ -149,7 +149,7 @@ wheels = [
 [[package]]
 name = "beatwatch-process"
 version = "0.1.0"
-source = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git?rev=pytest#861d4d662b8edea9e480548739bb7f9056a452c0" }
+source = { git = "ssh://git@github.com/beatlab-mcmaster/beatwatch-process.git?rev=pytest#bb9cd16d62b09e35b4ce5bcd21dd4fa28e1e363b" }
 dependencies = [
     { name = "datashader" },
     { name = "hvplot" },

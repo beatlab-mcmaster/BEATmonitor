@@ -61,12 +61,13 @@ uv run jupyter lab
 To run a script:
 
 ```sh
-uv run process_acceleration.py
+uv run postprocessing_example.py
 ```
 
 ## Template tutorial
 
-Once the environment is synchronized, you can step through an example tutorial script in Jupyter Lab. First launch Jupyter Lab by running the following command in the terminal:
+Once the environment is synchronized, you can step through an example tutorial script in Jupyter Lab.
+First launch Jupyter Lab by running the following command in the terminal:
 
 ```sh
 uv run jupyter lab
@@ -74,9 +75,7 @@ uv run jupyter lab
 
 Jupyter should open up in your web browser.
 
-Follow the instructions in the notebook: `postprocessing_template.ipynb`
-
-- Note: the notebook is located in the `src/postprocess/scripts/` folder of this repository.
+Follow the instructions in the notebook: `postprocessing_example.ipynb`
 
 ## Resources
 
