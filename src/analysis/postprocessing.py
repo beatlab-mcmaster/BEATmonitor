@@ -15,12 +15,14 @@ import argparse  # Handle command line arguments
 import re  # Text search tools
 from pathlib import Path  # noqa: F401 -- Path syntax
 
-import hvplot.pandas  # noqa: F401 -- Pandas + holoviews
+import holoviews as hv  # noqa: F401 -- TODO: tmp
+import hvplot.pandas  # noqa: F401 -- Pandas & holoviews
 import pandas as pd  # Data handling
 import pytz  # Timezone tools
 
 # Import beatwatch processing tools
 from beatwatch_process.parsers import Parser, summarise_metadata
+from beatwatch_process.process import upsample
 from beatwatch_process.utils import get_valid_watch_files, load_config
 
 ################## Handle command line arguments ##############################
@@ -36,12 +38,19 @@ arg_parse.add_argument(
     default="default.yml",
     help="Specify configuration file (default: 'default.yml')",
 )
+arg_parse.add_argument(
+    "--save",
+    type=str,
+    default="combined",
+    help="Save processed dataframes as 'individual' files, or one 'combined' file (default: 'combined')",
+)
 args = arg_parse.parse_args()
 
 ################## Setup and configuration ####################################
 
 ## Read configuration file with load_config from beatwatch_process.utils
 cfg = load_config(args.config)
+hz = round(1000 / cfg["rate_downsample"])  # TODO: add to beatwatch:utils
 
 # TODO: timezone operations should be handled by beatwatch_process module
 tz = pytz.timezone(cfg["timezone"])  # Initialize timezone
@@ -65,67 +74,51 @@ metadata.to_csv(cfg["paths_out"]["summary"] / "parsed_metadata.csv")
 
 ################## Process raw data ###########################################
 
+for k, v in data.items():
+    for df_name in ["hr", "accel"]:
+        if f"data_{df_name}" in v:
+            print(f"Processing {df_name} dataframe [{k}]")
+            # Pad selection to nearest second before first sample # TODO: add to beatwath_process
+            start = v[f"data_{df_name}"]["time_absolute"].min().floor("s")
+            # Resample  data
+            v[f"data_{df_name}"] = upsample(
+                v[f"data_{df_name}"],
+                time_start=start,
+                output_rate=cfg["rate_downsample"],
+                max_gap=cfg[f"max_gap_{df_name}"],
+            )
 
 ################## Save processed data #########################################
 
-sample_rate = cfg["rate_downsample"]
-frequency = round(1000 / sample_rate)
-ft = cfg["output_file_type"]
-
-# Write individual parsed data files
-if cfg["output_individual_files"]:
-    for k, v in data.items():
-        (
-            v["data_hr"][::sample_rate]  # Filter samples
-            .drop(columns=["time_elapsed"])  # Drop unused columns
-            .to_parquet(
-                cfg["output_path"]
-                + f"processed/heart_rate/{k.strip('.csv')}_{frequency}Hz.{ft}"
-            )
-        )
-        (
-            v["data_accel"][::sample_rate]  # Filter samples
-            .drop(columns=["time_elapsed"])  # Drop columns
-            .to_parquet(
-                cfg["output_path"]
-                + f"processed/acceleration/{k.strip('.csv')}_{frequency}Hz.{ft}"
-            )
-        )
-
-
-# Write single parsed data file
-if cfg["output_combined_files"]:
-    data_accel = pd.DataFrame()
-    data_hr = pd.DataFrame()
-
-    for k, v in data.items():
-        # Get watch name
-        watch_name = re.search(r"(W.*)\..*$", f).group(1)
-        # Add name to hr dataframe
-        v["data_hr"]["watch"] = watch_name
-        v["data_hr"]["watch"] = v["data_hr"]["watch"].astype("category")
-        # Add name to accel dataframe
-        v["data_accel"]["watch"] = watch_name
-        v["data_accel"]["watch"] = v["data_accel"]["watch"].astype("category")
-        # Create single hr, accel dataframes
-        data_hr = pd.concat(
-            [
-                data_hr,
-                v["data_hr"][::sample_rate].drop(columns=["time_elapsed"]),
-            ]
-        )
-        data_accel = pd.concat(
-            [
-                data_accel,
-                v["data_accel"][::sample_rate].drop(columns=["time_elapsed"]),
-            ]
-        )
-
-    data_hr.to_parquet(
-        cfg["output_path"]
-        + f"processed/heart_rate/combined_hr_watches_{frequency}Hz.{ft}"
+if args.save == "individual":
+    print(
+        f"Saving processed data to '{cfg['paths_out']['__cache']}' as individual files."
     )
-    data_accel.to_parquet(
-        cfg["output_path"]
-        + f"processed/acceleration/combined_accel_watches_{frequency}Hz.{ft}"
-    )
+    for k, v in data.items():
+        for df_name in ["hr", "accel"]:
+            if f"data_{df_name}" in v:
+                v[f"data_{df_name}"].to_parquet(
+                    cfg["paths_out"]["__cache"]
+                    / f"{k.strip('.csv')}_{df_name}_{hz}Hz.parquet"
+                )
+else:
+    print(f"Saving processed data to '{cfg['paths_out']['__cache']}' as combined file.")
+    for df_name in ["hr", "accel"]:
+        combined_df = pd.DataFrame()
+        for k, v in data.items():
+            if f"data_{df_name}" in v:
+                # Get watch name
+                watch_name = re.search(r"(W.*)\..*$", k).group(1)
+                # Add name to dataframe
+                v[f"data_{df_name}"]["watch"] = watch_name
+                v[f"data_{df_name}"]["watch"] = v[f"data_{df_name}"]["watch"].astype(
+                    "category"
+                ) # FIX: Set type when concat
+                # Create single dataframe
+                combined_df = pd.concat([combined_df, v[f"data_{df_name}"]])
+        # Write
+        combined_df["watch"] = combined_df["watch"].astype("category")
+        if not combined_df.empty:
+            combined_df.to_parquet(
+                cfg["paths_out"]["__cache"] / f"data_{df_name}_full_{hz}Hz.parquet"
+            )
