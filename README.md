@@ -22,32 +22,41 @@ We encourage feedback to be used for further development and improvements.
 
 This project contains two applications:
 
-1. A [Bangle.js 2](https://banglejs.com) smartwatch application that records timestamped heart rate and raw PPG sensor data at \~25 Hz.
+1. A [Bangle.js 2](https://banglejs.com) smartwatch application that records timestamped heart rate and raw PPG sensor data at \~25 Hz. Accelerometer data can optionally be collected at 12.5--50+ Hz. Brief survey questions with numeric/slider responses and be configured and sent in real time to devices while recording.
 2. A node.js (local) web application that connects to multiple Bangle.js 2 watches via Bluetooth. This app allows for remote monitoring, starting/stopping records, time synchronization, and large file transfers.
 
 ## Setup
 
-This system was developed and tested (so far) on M1/M3 MacBooks (MacOS 14
-Sonoma; MacOS 15 Sequoia).
+This system was developed and tested (so far) on M1/M3 MacBook Pros.
 
 > [!NOTE]
 > Testing required:
 >
-> - [ ] Other Mac versions
+> - [ ] Docker
+> - [ ] Virtual machines
+> - [ ] MacOS
+>   - [X] 14 Sonoma (M1/M3)
+>   - [X] 15 Sequoia (M1/M3)
+>   - [X] 26 Tahoe (M1/M3)
 > - [ ] Linux
 > - [ ] Windows
+>   - [x] 11 - **not currently supported!**[^windows]
+
+[^windows]: BT device and driver setup is not straightforward. Potential alternative node packages: <https://github.com/stoprocent/noble>; <https://github.com/thegecko/webbluetooth>
 
 ### 1. Setting up the Bangle.js 2 watches
 
-See [Watch documentation](src/bangle/README.md)
+See [Watch documentation](src/bangle/README.md).
 
 ### 2. Setting up the multi-watch monitoring dashboard
 
-See [Dashboard documentation](/src/dashboard/README.md)
+See [Dashboard documentation](/src/dashboard/README.md).
 
-### 3. Post-processing data
+### 3. Analysing data
 
-See [Post-processing documentation and tutorial](/src/postprocess/README.md)
+See [Analysis documentation and tutorial](/src/analysis/README.md).
+
+The analysis code uses our python module for preprocessing watch data here: [beatwatch_process](https://github.com/beatlab-mcmaster/beatwatch_process).
 
 ## Troubleshooting
 
@@ -63,12 +72,15 @@ Research studies using BEATMonitor have included:
 - [LIVELab 10th Anniversary: John Ellison – Some Kind of Wonderful](https://livelab.mcmaster.ca/events/livelab-10th-anniversary-john-ellison-some-kind-of-wonderful/)
 - [LIVELab 10th Anniversary: Santee Smith and Kaha:wi Dance Theatre – Continuance Immersive Commemoration (Continuance)](https://livelab.mcmaster.ca/events/livelab-10th-anniversary-santee-smith-and-kahawi-dance-theatre-continuance-immersive-commemoration/)
 - [Canadian federal leaders' debate](https://www.cbc.ca/news/canada/hamilton/mcmaster-undecided-voters-study-1.7512327)
+- Blue Jays World Series 'Watch' Parties
+- LIVELab Hybrid Concert Series: Darcy Hepner and Nancy Walker: An evening of jazz, measured in real time
+- Dynamics of Applause
 
 ## License
 
 BEATMonitor - Multi-person photoplethysmography using open-source smartwatch technology
 
-Copyright (C) 2025 BEAT Lab
+Copyright (C) 2026 BEAT Lab
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
