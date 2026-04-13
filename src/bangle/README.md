@@ -95,6 +95,30 @@ to a Bangle.js 2 watch.
 
 6. These values can be manually copied and stored for your won records.
 
+### Updated configuration
+
+```javascript
+sn="";
+oldSettings = require("Storage").readJSON("beatSettings.json");
+let settings = {
+  physicalId: oldSettings.physicalId,
+  recordHR: false,
+  recordAccel: true,
+  allowManual: false,
+  maxStorage: 90,
+  minStorage: 5,
+  maxTrash: 60,
+  enableHighSpeed: true,
+  highSpeedPollRate: 20,
+  seatNumber: sn,
+};
+setSettings(settings);
+require("Storage").writeJSON("beatSettings.json", settings);
+console.log("SERIAL: ", process.env.SERIAL);
+console.log("MAC id: ", NRF.getAddress());
+console.log(require("Storage").readJSON("beatSettings.json"));
+```
+
 ### Dashboard installation
 
 > [!NOTE]
