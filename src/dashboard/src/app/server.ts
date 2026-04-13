@@ -200,8 +200,8 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("btn-note", (note): void => {
+    let firstConnectDelay = 0; // TODO: temporary
     logger.info(`Resetting firstConnectDelay ${firstConnectDelay}`);
-    firstConnectDelay = 0; // TODO: temporary
     logger.info(`SERVER NOTE: {"Trial": ${JSON.stringify(note)}}`);
   });
 
