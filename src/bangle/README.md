@@ -246,7 +246,44 @@ All data recorded by the watch are stored in a text file with four sections:
 
 ## Resources
 
+### Firmware
+
+#### Upgrading
+
+Firmware can be updated from the official [Bangle.js App Loader](https://banglejs.com/apps/?q=firmware)
+
+> [!CAUTION]
+>
+> Stop the BEATmonitor dashboard if it is running. Scanning commands sent from the dashboard might interfere with successful firmware installation.
+
+1. Connect to the watch that you want to update.
+2. Use the `Firmware Update` application. Select the 'hamburger'.
+![Select firmware update application options](/res/images/firmware-01.png)
+3. Select the firmware release that you want to install.
+![Select firmware release and upload](/res/images/firmware-02.png)
+4. Click 'Upload' to start the install.
+
+#### Recovery
+
+If the firmware fails to install, the watch will be caught in a boot cycle (no applications will load). You cannot fix/upgrade the firmware with the App Loader method above.
+
+The watch can be recovered using the [nRF Device Firmware Update](https://play.google.com/store/apps/details?id=no.nordicsemi.android.dfu&pcampaignid=web_share) application on an Android device.
+
+> [!IMPORTANT]
+>
+> The iOS application does not seem to work!!
+
+On the Android device:
+
+1. Download the firmware version from the [Espruino Downloads page](https://www.espruino.com/Download) (for the Bangle.js 2 board).
+2. Open the DFU app and find the `DFUTarg` device.
+3. Select the downloaded firmware and upload.
+
+Also, see instructions from the [firmware update documentation](https://www.espruino.com/Firmware+Update#nrf52).
+
 ### Bangle.js programming
+
+[Browser IDE](https://www.espruino.com/ide)
 
 [Technical specs](https://www.espruino.com/Bangle.js2)
 
