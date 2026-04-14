@@ -258,9 +258,9 @@ Firmware can be updated from the official [Bangle.js App Loader](https://banglej
 
 1. Connect to the watch that you want to update.
 2. Use the `Firmware Update` application. Select the 'hamburger'.
-![Select firmware update application options](/res/images/firmware-01.png)
+![Select firmware update application options](/res/images/firmware-01s.png)
 3. Select the firmware release that you want to install.
-![Select firmware release and upload](/res/images/firmware-02.png)
+![Select firmware release and upload](/res/images/firmware-02s.png)
 4. Click 'Upload' to start the install.
 
 #### Recovery
