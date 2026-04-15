@@ -300,14 +300,13 @@ function stopRecord() {
   if (status.state == STATE.RECORDING) {
     status.state = STATE.STOP_RECORD;
     Bluetooth.println("Stopping record");
-
     // Write end data
     metaData = getMetaData(status.state);
     data.write(JSON.stringify(metaData));
-
     // Reset record
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
+    Bluetooth.println(sendStatus());
     status.hrmCollected = 0;
     status.accelCollected = 0;
     status.state = STATE.WAIT;
@@ -316,7 +315,6 @@ function stopRecord() {
   } else {
     Bluetooth.println("No record to stop");
   }
-  Bluetooth.println(sendStatus());
   setNRF();
 }
 
