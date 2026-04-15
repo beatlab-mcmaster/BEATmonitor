@@ -79,7 +79,7 @@ const device = {
 // Default settings
 var settings = {
   physicalId: "NA",
-  recordHR: false,
+  recordHR: true,
   recordAccel: true,
   allowManual: false,
   maxStorage: 90,
@@ -106,34 +106,6 @@ function updateStatus() {
   status.batteryLife = E.getBattery();
   status.freeStorage = storage.getFree();
   setNRF();
-}
-
-function updateSettings() {
-  if (storage.readJSON("beatSettings.json")) {
-    Bluetooth.println("beatSettings.json found");
-    let fileSettings = storage.readJSON("beatSettings.json");
-    for (let setting in fileSettings) {
-      if (setting in settings) {
-        Bluetooth.println(
-          `replace existing setting [${setting}] with '${fileSettings[setting]}'`,
-        );
-        settings[setting] = fileSettings[setting];
-      } else {
-        Bluetooth.println(`setting: ${setting}`);
-      }
-    }
-  }
-  Bluetooth.println(`new settings: ${JSON.stringify(settings)}`);
-  status.state = STATE.WAIT;
-  flags = writeFlag(flags, FLAGS.ACCEL_ENABLED, settings.recordAccel);
-  flags = writeFlag(flags, FLAGS.HR_ENABLED, settings.recordHR);
-  flags = writeFlag(flags, FLAGS.MANUAL_ENABLED, settings.allowManual);
-  setNRF();
-  if (settings.enableHighSpeed) {
-    // (KX022-1020: see https://www.espruino.com/datasheets/KX022-1020.pdf)
-    Bangle.accelWr(0x1b, 0x03 | 0x40); // 100hz sensor output, ODR/2 filter
-    Bangle.setPollInterval(settings.highSpeedPollRate);
-  }
 }
 
 function getFileData() {
@@ -366,17 +338,46 @@ function sendSettings() {
   Bluetooth.println(JSON.stringify(settings));
 }
 
+function updateSettings() {
+  if (storage.readJSON("beatSettings.json")) {
+    Bluetooth.println("beatSettings.json found");
+    let fileSettings = storage.readJSON("beatSettings.json");
+    for (let setting in fileSettings) {
+      if (setting in settings) {
+        Bluetooth.println(
+          `replace existing setting [${setting}] with '${fileSettings[setting]}'`,
+        );
+        settings[setting] = fileSettings[setting];
+      } else {
+        Bluetooth.println(`setting: ${setting}`);
+      }
+    }
+  }
+  Bluetooth.println(`new settings: ${JSON.stringify(settings)}`);
+  status.state = STATE.WAIT;
+  flags = writeFlag(flags, FLAGS.ACCEL_ENABLED, settings.recordAccel);
+  flags = writeFlag(flags, FLAGS.HR_ENABLED, settings.recordHR);
+  flags = writeFlag(flags, FLAGS.MANUAL_ENABLED, settings.allowManual);
+  setNRF();
+  if (settings.enableHighSpeed) {
+    // (KX022-1020: see https://www.espruino.com/datasheets/KX022-1020.pdf)
+    Bangle.accelWr(0x1b, 0x03 | 0x40); // 100hz sensor output, ODR/2 filter
+    Bangle.setPollInterval(settings.highSpeedPollRate);
+  }
+}
+
 function setSettings(newSettings) {
   if (status.state == STATE.WAIT && newSettings != undefined) {
-    if (!newSettings.physicalId) {
-      newSettings.physicalId = settings.physicalId;
+    for (oldSetting in settings) {
+      if (!(oldSetting in newSettings)) {
+        newSettings[oldSetting] = settings[oldSetting];
+      }
     }
     storage.writeJSON("beatSettings.json", newSettings);
     updateSettings();
-    Bluetooth.println(JSON.stringify(device));
     sendSettings();
   } else {
-    Bluetooth.println("[INFO] Watch is busy, cannot set ID!");
+    Bluetooth.println("[INFO] Watch is busy, cannot configure settings!");
   }
 }
 
