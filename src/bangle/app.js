@@ -277,6 +277,7 @@ function startRecord() {
     // Get current watch info
     fileData = getFileData();
     metaData = getMetaData(status.state);
+    Bluetooth.println(JSON.stringify(metaData));
     status.startTimestamp = metaData.Record.UNIXTimeStamp;
     // Create a file to store heart rate data
     data = storage.open(fileData.File.Name, "a");
@@ -292,7 +293,6 @@ function startRecord() {
   } else {
     Bluetooth.println("Not ready to start record");
   }
-  Bluetooth.println(sendStatus());
   setNRF();
 }
 
@@ -306,7 +306,7 @@ function stopRecord() {
     // Reset record
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
-    Bluetooth.println(sendStatus());
+    Bluetooth.println(JSON.stringify(metaData));
     status.hrmCollected = 0;
     status.accelCollected = 0;
     status.state = STATE.WAIT;
