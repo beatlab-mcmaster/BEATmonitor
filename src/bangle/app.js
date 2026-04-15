@@ -193,9 +193,32 @@ function draw() {
   } else {
     g.setFontVector(35);
     // Draw the physical device ID
+    if (status.state == STATE.RECORDING) {
+      g.setColor(1, 0, 0);
+      g.fillRect(7, 45, 171, 126);
+    } else if (status.state == STATE.SENDING_DATA) {
+      g.setColor(1, 1, 0);
+      g.fillRect(7, 45, 171, 126);
+    }
+    g.setColor(0, 0, 0);
+    g.drawRect(6, 44, 172, 127);
     g.drawString(`ID: ${settings.physicalId}`, 10, 50);
     g.setFontVector(30);
-    g.drawString(`Seat: ${settings.seatNumber}`, 20, 120);
+    g.drawString(`Seat: ${settings.seatNumber}`, 15, 90);
+    g.setFontVector(20);
+    let uiHR = "--";
+    let uiAC = "--";
+    let uiSR = "--";
+    if (settings.recordHR) {
+      uiHR = "HR";
+    }
+    if (settings.recordAccel) {
+      uiAC = "AC";
+      if (settings.enableHighSpeed) {
+        uiSR = settings.highSpeedPollRate;
+      }
+    }
+    g.drawString(`${device.idShortMAC}|${uiHR}|${uiAC}|${uiSR}`, 10, 157);
   }
 
   Bangle.drawWidgets();
@@ -364,6 +387,7 @@ function updateSettings() {
     Bangle.accelWr(0x1b, 0x03 | 0x40); // 100hz sensor output, ODR/2 filter
     Bangle.setPollInterval(settings.highSpeedPollRate);
   }
+  draw();
 }
 
 function setSettings(newSettings) {
@@ -458,6 +482,7 @@ function sendData(fileName) {
         clearInterval(sendData); // stop sending data
         status.state = STATE.WAIT;
         setNRF();
+        draw();
       } else {
         prog += d.length; // update progress
       }
@@ -473,6 +498,7 @@ function sendData(fileName) {
   } else {
     Bluetooth.println("[INFO] Watch is busy, cannot send data!");
   }
+  draw();
 }
 
 // ---------------------------- Send status  ----------------------------------
