@@ -12,8 +12,8 @@ import { homedir } from "os";
 const __dirname = join(dirname(fileURLToPath(import.meta.url)), "../");
 
 const dataRoot = "__data"
-const studyName = "applause";
-const studyInstance = "260210";
+const studyName = "SAMPLE_STUDY";
+const studyInstance = "SAMPLE_INSTANCE";
 
 const settings = {
   // Add new devices to the experiment (true) or limit to previously set devices (false)
