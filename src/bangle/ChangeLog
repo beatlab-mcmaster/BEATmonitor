@@ -10,3 +10,4 @@
 0.100: Breaking changes! Add settings file; improve watch logging/feedback
 0.101: Fix: settings file was not read properly
 0.102: Update advertisement; high speed acceleration; watch face
+0.200: Integrate survey events; UI options

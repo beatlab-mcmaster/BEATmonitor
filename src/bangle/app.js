@@ -1,4 +1,4 @@
-// BEATmonitor -- v0.102
+// BEATmonitor -- v0.200
 // Load storage module
 const storage = require("Storage");
 
@@ -68,7 +68,7 @@ function setNRF() {
 // Get device information
 const device = {
   program: "BEATwatch",
-  version: "v0.102",
+  version: "v0.200",
   firmware: process.env.VERSION,
   serial: process.env.SERIAL,
   idMAC: NRF.getAddress(),
