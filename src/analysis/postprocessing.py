@@ -113,7 +113,7 @@ else:
                 v[f"data_{df_name}"]["watch"] = watch_name
                 v[f"data_{df_name}"]["watch"] = v[f"data_{df_name}"]["watch"].astype(
                     "category"
-                ) # FIX: Set type when concat
+                )  # FIX: Set type when concat
                 # Create single dataframe
                 combined_df = pd.concat([combined_df, v[f"data_{df_name}"]])
         # Write

@@ -4,6 +4,20 @@ const storage = require("Storage");
 
 // TODO: Turn accelerometer back off/down, and power save back on so battery drains slower
 
+// ------------------------------ Emulation Only ------------------------------
+
+if (process.env.BOARD == "EMSCRIPTEN2") {
+  class EmuBluetooth {
+    constructor() {
+      console.log("No BLE module, creating wrapper");
+    }
+    println(msg) {
+      console.log(msg);
+    }
+  }
+  globalThis.Bluetooth = new EmuBluetooth();
+}
+
 // --------------------------- Advertisement management -----------------------
 
 // Bit indices
@@ -31,6 +45,8 @@ const STATE = {
   START_STREAM: 20,
   STREAMING: 21,
   STOP_STREAM: 22,
+  BUZZING: 30,
+  SURVEY_ACTIVE: 40,
   SENDING_DATA: 100,
   ERROR: 255,
 };
@@ -86,6 +102,7 @@ var settings = {
   minStorage: 5,
   maxTrash: 60,
   enableHighSpeed: true,
+  enableSurvey: false,
   highSpeedPollRate: 40,
   showUI: false,
   seatNumber: "X0",
@@ -101,6 +118,13 @@ var status = {
   batteryLife: E.getBattery(),
   freeStorage: storage.getFree(),
 };
+
+// --------------------------- Data storage -----------------------------------
+
+var dataSensor; // HR, Accel data
+var dataSurvey; // Survey responses
+var survey; // Survey definition
+var currentQuestion; // Current question data
 
 function updateStatus() {
   status.batteryLife = E.getBattery();
@@ -234,39 +258,6 @@ function draw() {
   );
 }
 
-// Respond to touch events...
-Bangle.on("touch", (button, xy) => {
-  if (settings.allowManual) {
-    if (
-      xy.x > drawTouch.x1 &&
-      xy.x < drawTouch.x2 &&
-      xy.y > drawTouch.y1 &&
-      xy.y < drawTouch.y2
-    ) {
-      startRecord();
-    }
-  }
-});
-
-// Respond to side button press
-let nPress = 0;
-setWatch(
-  function () {
-    nPress++;
-    if (nPress > 5) {
-      // 5 presses required...
-      stopRecord();
-      stopStreaming();
-    } else if (nPress == 1) {
-      setTimeout(() => {
-        nPress = 0;
-      }, 3000); // ...within 3 seconds
-    }
-  },
-  BTN,
-  { edge: "rising", debounce: 50, repeat: true },
-);
-
 // ---------------------------- Record to watch -------------------------------
 // Button controls
 function startRecord() {
@@ -280,10 +271,10 @@ function startRecord() {
     Bluetooth.println(JSON.stringify(metaData));
     status.startTimestamp = metaData.Record.UNIXTimeStamp;
     // Create a file to store heart rate data
-    data = storage.open(fileData.File.Name, "a");
+    dataSensor = storage.open(fileData.File.Name, "a");
     // Start by writing watch info
-    data.write(JSON.stringify(fileData) + "\n");
-    data.write(JSON.stringify(metaData) + "\n");
+    dataSensor.write(JSON.stringify(fileData) + "\n");
+    dataSensor.write(JSON.stringify(metaData) + "\n");
 
     // Turn on the heart rate sensor
     Bangle.setHRMPower(1);
@@ -302,7 +293,7 @@ function stopRecord() {
     Bluetooth.println("Stopping record");
     // Write end data
     metaData = getMetaData(status.state);
-    data.write(JSON.stringify(metaData));
+    dataSensor.write(JSON.stringify(metaData));
     // Reset record
     // Turn off the heart rate sensor
     Bangle.setHRMPower(0);
@@ -384,6 +375,14 @@ function updateSettings() {
     // (KX022-1020: see https://www.espruino.com/datasheets/KX022-1020.pdf)
     Bangle.accelWr(0x1b, 0x03 | 0x40); // 100hz sensor output, ODR/2 filter
     Bangle.setPollInterval(settings.highSpeedPollRate);
+  }
+  if (settings.enableSurvey) {
+    // Try to read survey
+    if (storage.readJSON("beatSurvey.json")) {
+      survey = storage.readJSON("beatSurvey.json");
+    } else {
+      Bluetooth.println("Could not find survey");
+    }
   }
   draw();
 }
@@ -540,7 +539,7 @@ function getHR(hrm) {
         hrm.filt,
       ].join(",");
       // Write to file
-      data.write(obs + "\n");
+      dataSensor.write(obs + "\n");
     } else if (status.state == STATE.STREAMING) {
       let dbuf = new ArrayBuffer(19); // n = record size
       let d = new DataView(dbuf);
@@ -579,8 +578,384 @@ function procAccel(xyz) {
       Math.round(xyz.mag * 1000),
       Math.round(xyz.diff * 1000),
     ].join(",");
-    data.write("A" + obs + "\n");
+    dataSensor.write("A" + obs + "\n");
     status.accelCollected++;
+  }
+}
+
+// -------------------------------- Survey functions --------------------------
+function initSection(sectionNumber) {
+  console.log(`Initialize section: ${sectionNumber}`);
+  buzz().then(() => {
+    let d = new Date();
+    console.log(`${d.toISOString()} -- Done`); // TODO: remove
+    if (sectionNumber > 0) {
+      updateSectionStatus(sectionNumber);
+    } else {
+      drawHome();
+    }
+  });
+}
+
+function updateSectionStatus(sectionNumber) {
+  console.log("updating section status");
+  if (survey) {
+    console.log("Survey exists");
+    if (
+      (sectionNumber == 0) |
+      !status.surveySectionNumber |
+      (sectionNumber != status.surveySectionNumber)
+    ) {
+      console.log("init");
+      status.surveySectionNumber = 0;
+      status.surveySectionName = "na";
+      status.surveySectionItems = 0;
+      status.surveyItemNumber = 0;
+    }
+    if (sectionNumber > 0) {
+      const section = survey[sectionNumber];
+      status.surveySectionNumber = sectionNumber;
+      status.surveySectionName = section["name"];
+      status.surveySectionItems = section["questions"].length;
+      status.surveyItemNumber++;
+      if (status.surveyItemNumber > status.surveySectionItems) {
+        console.log("Section complete");
+        updateSectionStatus(0);
+      } else {
+        const item = getSectionItem(
+          status.surveySectionNumber,
+          status.surveySectionName,
+          status.surveyItemNumber,
+        );
+        drawItem(item);
+      }
+    } else {
+      drawHome();
+    }
+  }
+}
+
+function getSectionItem(sectionNumber, sectionName, itemNumber) {
+  console.log(
+    `getting Section: ${sectionNumber}, Name: ${sectionName} Item: ${itemNumber}`,
+  );
+  const item = survey[sectionNumber]["questions"][itemNumber - 1];
+  return item;
+}
+
+function drawItem(item) {
+  status.state == STATE.SURVEY_ACTIVE;
+  console.log("Draw item");
+  console.log(JSON.stringify(item));
+
+  // Create data for the current question
+  currentQuestion = {
+    timeStamp: Date.now(),
+    number: status.surveySectionNumber,
+    name: status.surveySectionName,
+    item: status.surveyItemNumber,
+    question: item["prompt"].replaceAll("\n", " "),
+    input: item["type"],
+    range: item["range"],
+    response: "NA",
+  };
+
+  Bangle.setOptions({ backlightTimeout: 60000, lockTimeout: 60000 });
+  Bangle.setBacklight(1);
+  Bangle.setLocked(false);
+  g.clear();
+  widgetsHide();
+  // Draw the question text
+  g.setFontAlign(0, 0); // Anchor at center of text (vert & hor)
+  g.setColor(0, 0, 0); // Set font color to black
+  g.setFont("Vector", 27);
+  g.drawString(item["prompt"], g.getWidth() / 2, 30);
+
+  // Draw the input feedback
+  if (item["type"] == "slider") {
+    drawSlider((setPoint = 1), (sliderRange = item["range"]));
+  } else if (item["type"] == "number") {
+    drawSlider(
+      (setPoint = 0),
+      (sliderRange = item["range"]),
+      (numberInput = true),
+    );
+  } else {
+    console.log("Not a valid input!");
+  }
+  drawControls();
+}
+
+function drawHome() {
+  console.log("Draw home");
+  status.state == STATE.WAIT;
+  widgetsHide();
+  draw();
+}
+
+// Vibrate and light up watch n number of times
+//   Parameters: the number of times to 'buzz' the participant
+function buzz(nTimes) {
+  console.log("Buzz called");
+  nTimes = nTimes || 7;
+  let count = 0;
+  return new Promise((resolve) => {
+    function doBuzz() {
+      count++;
+      let d = new Date();
+      console.log(`${d.toISOString()} -- Buzz ${count}`); // TODO: remove
+      Bangle.buzz();
+      Bangle.setBacklight(1);
+      // Turn off buzz after 150ms without stopping the CPU
+      setTimeout(() => Bangle.buzz(0), 150);
+      if (count < nTimes) {
+        setTimeout(doBuzz, 300);
+      } else {
+        setTimeout(resolve, 300);
+      }
+    }
+    doBuzz();
+  });
+}
+
+// Write participant responses to watch; reset current question to null
+function saveResponse() {
+  Bluetooth.println("[INFO] Saving: ", currentQuestion);
+  let fileData = getFileData();
+  let metaData = getMetaData(status.state);
+  if (!dataSurvey) {
+    dataSurvey = storage.open("SV" + fileData.File.Name, "a");
+    // Start by writing watch info
+    dataSurvey.write(JSON.stringify(fileData) + "\n");
+    dataSurvey.write(JSON.stringify(metaData) + "\n");
+  }
+  dataSurvey.write(JSON.stringify(currentQuestion) + "\n");
+  // Reset
+  currentQuestion = null;
+}
+
+// ---------------------------- Survey UI -------------------------------------
+// define touchscreen buttons
+const boxSize = 75;
+const boxDown = {
+  x1: 5,
+  y1: g.getHeight() - boxSize - 5,
+  x2: 5 + boxSize,
+  y2: g.getHeight() - 5,
+};
+
+const boxUp = {
+  x1: g.getWidth() - boxSize - 5,
+  y1: g.getHeight() - boxSize - 5,
+  x2: g.getWidth() - 5,
+  y2: g.getHeight() - 5,
+};
+
+function drawControls() {
+  g.setFontAlign(0, 0); // Anchor at center of text (vert & hor)
+  g.setColor(0, 0, 0); // Set font color to black
+  g.setFont("Vector", 40);
+  g.drawRect(boxDown.x1, boxDown.y1, boxDown.x2, boxDown.y2);
+  g.drawString(
+    `-`,
+    (boxDown.x1 + boxDown.x2 + 5) / 2,
+    (boxDown.y1 + boxDown.y2 + 5) / 2,
+  );
+  g.drawRect(boxUp.x1, boxUp.y1, boxUp.x2, boxUp.y2);
+  g.drawString(
+    `+`,
+    (boxUp.x1 + boxUp.x2 + 5) / 2,
+    (boxUp.y1 + boxUp.y2 + 5) / 2,
+  );
+}
+
+// Draw a 'slider' bar to provide visual feedback of participants' current
+//   response.
+function drawSlider(setPoint, sliderRange, numberInput) {
+  setPoint = setPoint || 0; // Default position of slider
+  sliderRange = sliderRange || [0, 6];
+  numberInput = numberInput || false;
+
+  var boxOutline;
+  var bar;
+
+  if (!numberInput) {
+    // Full slider outline
+    boxOutline = {
+      x1: 5,
+      y1: 60,
+      x2: g.getWidth() - 5,
+      y2: 85,
+    };
+
+    // The 'bar' changes length with user input
+    bar = {
+      x1: boxOutline.x1 + 1,
+      y1: boxOutline.y1 + 1,
+      x2: boxOutline.x1 + 1,
+      y2: boxOutline.y2 - 1,
+    };
+
+    // The bar fills by equal discrete 'steps'
+    let step =
+      (boxOutline.x2 - boxOutline.x1 - 2) / (sliderRange[1] - sliderRange[0]);
+    bar.x2 = bar.x1 + setPoint * step;
+  } else if (numberInput) {
+    boxOutline = {
+      x1: g.getWidth() / 2 - 35,
+      y1: 40,
+      x2: g.getWidth() / 2 + 35,
+      y2: 90,
+    };
+  }
+
+  // Clear draw area
+  g.clearRect(boxOutline.x1, boxOutline.y1, boxOutline.x2, boxOutline.y2);
+
+  if (!numberInput) {
+    // Draw slider bar
+    g.setColor(0, 1, 0); // Green
+    g.fillRect(bar.x1, bar.y1, bar.x2, bar.y2);
+    if (currentQuestion.response == "NA") {
+      g.setFontAlign(0, 0); // Anchor at center of text (vert & hor)
+      g.setFont("Vector", 20);
+      g.setColor(0, 0, 0); // Black
+      g.drawString(
+        "Enter response",
+        (boxOutline.x2 + boxOutline.x1 + 5) / 2,
+        (boxOutline.y2 + boxOutline.y1 + 5) / 2,
+      );
+    }
+  } else if (numberInput) {
+    g.setFontAlign(0, 0); // Anchor at center of text (vert & hor)
+    g.setFont("Vector", 40);
+    g.drawString(
+      setPoint,
+      (boxOutline.x2 + boxOutline.x1 + 5) / 2,
+      (boxOutline.y2 + boxOutline.y1 + 5) / 2,
+    );
+  }
+
+  // Draw outline
+  g.setColor(0, 0, 0); // Black
+  g.drawRect(boxOutline.x1, boxOutline.y1, boxOutline.x2, boxOutline.y2);
+}
+
+// ---------------------------- Utils -----------------------------------------
+// Code modified from: https://github.com/espruino/BangleApps/blob/master/modules/widget_utils.js
+function widgetsHide() {
+  if (!global.WIDGETS) return;
+  g.reset(); // reset colors
+  for (var w of global.WIDGETS) {
+    if (w._draw) return; // already hidden
+    w._draw = w.draw;
+    w.draw = () => {};
+    w._area = w.area;
+    w.area = "";
+    if (w.x != undefined) g.clearRect(w.x, w.y, w.x + w.width - 1, w.y + 23);
+  }
+}
+
+/// Show any hidden widgets
+function widgetsShow() {
+  if (!global.WIDGETS) return;
+  for (var w of global.WIDGETS) {
+    if (!w._draw) return; // not hidden
+    w.draw = w._draw;
+    w.area = w._area;
+    delete w._draw;
+    delete w._area;
+    w.draw(w);
+  }
+}
+
+// Respond to touch events...
+Bangle.on("touch", (button, xy) => {
+  if (status.state == STATE.SURVEY_ACTIVE) {
+    if (
+      xy.x > boxUp.x1 &&
+      xy.x < boxUp.x2 &&
+      xy.y > boxUp.y1 &&
+      xy.y < boxUp.y2
+    ) {
+      // console.log("INC");
+      setResponse("INC");
+    } else if (
+      xy.x > boxDown.x1 &&
+      xy.x < boxDown.x2 &&
+      xy.y > boxDown.y1 &&
+      xy.y < boxDown.y2
+    ) {
+      // console.log("DEC");
+      setResponse("DEC");
+    }
+  } else if (status.state == STATE.WAIT) {
+    if (settings.allowManual) {
+      if (
+        xy.x > drawTouch.x1 &&
+        xy.x < drawTouch.x2 &&
+        xy.y > drawTouch.y1 &&
+        xy.y < drawTouch.y2
+      ) {
+        startRecord();
+      }
+    } else if (status.state == STATE.RECORDING) {
+    }
+  }
+});
+
+setWatch(
+  function () {
+    if (status.state == STATE.SURVEY_ACTIVE) {
+      saveResponse();
+      updateSectionStatus(status.surveySectionNumber);
+    }
+  },
+  BTN,
+  { edge: "rising", debounce: 50, repeat: true },
+);
+
+// TODO: combine this code...
+// setWatch(
+//   function () {
+//     nPress++;
+//     if (nPress > 5) {
+//       // 5 presses required...
+//       stopRecord();
+//       stopStreaming();
+//     } else if (nPress == 1) {
+//       setTimeout(() => {
+//         nPress = 0;
+//       }, 3000); // ...within 3 seconds
+//     }
+//   },
+//   BTN,
+//   { edge: "rising", debounce: 50, repeat: true },
+// );
+
+// Respond to side button press
+let nPress = 0;
+
+function setResponse(direction) {
+  console.log(direction, currentQuestion.response, currentQuestion.range);
+  if (currentQuestion.response == "NA") {
+    currentQuestion.response = currentQuestion.range[0];
+  }
+  if (
+    direction == "INC" &&
+    currentQuestion.response < currentQuestion.range[1]
+  ) {
+    currentQuestion.response += 1;
+  } else if (
+    direction == "DEC" &&
+    currentQuestion.response > currentQuestion.range[0]
+  ) {
+    currentQuestion.response -= 1;
+  }
+  if (currentQuestion.input == "slider") {
+    drawSlider(currentQuestion.response, currentQuestion.range);
+  } else if (currentQuestion.input == "number") {
+    drawSlider(currentQuestion.response, currentQuestion.range, true);
   }
 }
 
