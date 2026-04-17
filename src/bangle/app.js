@@ -251,8 +251,10 @@ function draw() {
   drawTimeout = setTimeout(
     function () {
       drawTimeout = undefined;
-      updateStatus();
-      draw();
+      if (status.state != STATE.SURVEY_ACTIVE) {
+        updateStatus();
+        draw();
+      }
     },
     60000 - (Date.now() % 60000),
   );
@@ -606,7 +608,7 @@ function updateSectionStatus(sectionNumber) {
       !status.surveySectionNumber |
       (sectionNumber != status.surveySectionNumber)
     ) {
-      console.log("init");
+      status.state = STATE.WAIT;
       status.surveySectionNumber = 0;
       status.surveySectionName = "na";
       status.surveySectionItems = 0;
@@ -644,7 +646,7 @@ function getSectionItem(sectionNumber, sectionName, itemNumber) {
 }
 
 function drawItem(item) {
-  status.state == STATE.SURVEY_ACTIVE;
+  status.state = STATE.SURVEY_ACTIVE;
   console.log("Draw item");
   console.log(JSON.stringify(item));
 
