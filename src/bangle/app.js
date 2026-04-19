@@ -111,6 +111,7 @@ var settings = {
 // Store status
 var status = {
   state: STATE.NOT_READY,
+  ui: STATE.WAIT,
   hrmCollected: 0,
   accelCollected: 0,
   //Timestamp is set on record
@@ -251,7 +252,7 @@ function draw() {
   drawTimeout = setTimeout(
     function () {
       drawTimeout = undefined;
-      if (status.state != STATE.SURVEY_ACTIVE) {
+      if (status.ui != STATE.SURVEY_ACTIVE) {
         updateStatus();
         draw();
       }
@@ -348,6 +349,8 @@ function stopStreaming() {
 
 // ---------------------------- Configure settings ----------------------------
 function sendSettings() {
+  // FIX: This sporadically causes error on BEATwatch (when recording?):
+  // 'Uncaught Error: Can't write in this mode at beatmonitor.app.js:25:1'
   Bluetooth.println(JSON.stringify(device));
   Bluetooth.println(JSON.stringify(settings));
 }
@@ -608,7 +611,7 @@ function updateSectionStatus(sectionNumber) {
       !status.surveySectionNumber |
       (sectionNumber != status.surveySectionNumber)
     ) {
-      status.state = STATE.WAIT;
+      status.ui = STATE.WAIT; // FIX: stops recording!!! need a separate survey status!!
       status.surveySectionNumber = 0;
       status.surveySectionName = "na";
       status.surveySectionItems = 0;
@@ -646,7 +649,7 @@ function getSectionItem(sectionNumber, sectionName, itemNumber) {
 }
 
 function drawItem(item) {
-  status.state = STATE.SURVEY_ACTIVE;
+  status.ui = STATE.SURVEY_ACTIVE;
   console.log("Draw item");
   console.log(JSON.stringify(item));
 
@@ -690,7 +693,7 @@ function drawItem(item) {
 
 function drawHome() {
   console.log("Draw home");
-  status.state == STATE.WAIT;
+  status.ui == STATE.WAIT;
   widgetsHide();
   draw();
 }
@@ -706,10 +709,8 @@ function buzz(nTimes) {
       count++;
       let d = new Date();
       console.log(`${d.toISOString()} -- Buzz ${count}`); // TODO: remove
-      Bangle.buzz();
+      Bangle.buzz(150);
       Bangle.setBacklight(1);
-      // Turn off buzz after 150ms without stopping the CPU
-      setTimeout(() => Bangle.buzz(0), 150);
       if (count < nTimes) {
         setTimeout(doBuzz, 300);
       } else {
@@ -873,7 +874,7 @@ function widgetsShow() {
 
 // Respond to touch events...
 Bangle.on("touch", (button, xy) => {
-  if (status.state == STATE.SURVEY_ACTIVE) {
+  if (status.ui == STATE.SURVEY_ACTIVE) {
     if (
       xy.x > boxUp.x1 &&
       xy.x < boxUp.x2 &&
@@ -891,7 +892,7 @@ Bangle.on("touch", (button, xy) => {
       // console.log("DEC");
       setResponse("DEC");
     }
-  } else if (status.state == STATE.WAIT) {
+  } else if (status.ui == STATE.WAIT) {
     if (settings.allowManual) {
       if (
         xy.x > drawTouch.x1 &&
@@ -901,14 +902,14 @@ Bangle.on("touch", (button, xy) => {
       ) {
         startRecord();
       }
-    } else if (status.state == STATE.RECORDING) {
+    } else if (status.ui == STATE.RECORDING) {
     }
   }
 });
 
 setWatch(
   function () {
-    if (status.state == STATE.SURVEY_ACTIVE) {
+    if (status.ui == STATE.SURVEY_ACTIVE) {
       saveResponse();
       updateSectionStatus(status.surveySectionNumber);
     }
