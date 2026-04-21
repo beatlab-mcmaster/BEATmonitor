@@ -2,7 +2,7 @@
   "id": "beatmonitor",
   "name": "BEATmonitor",
   "shortName": "beatmon",
-  "version": "0.200",
+  "version": "0.201",
   "description": "This application records heartrate, confidence, and raw PPG data at ~25 Hz; and [optionally] acceleration (x, y, z, magnitude, difference) at ~12.5 Hz (configurable to higher sample rates)",
   "icon": "app.png",
   "tags": "tool,health",

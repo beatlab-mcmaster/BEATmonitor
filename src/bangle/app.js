@@ -1,4 +1,4 @@
-// BEATmonitor -- v0.200
+// BEATmonitor -- v0.201
 // Load storage module
 const storage = require("Storage");
 
@@ -611,7 +611,7 @@ function updateSectionStatus(sectionNumber) {
       !status.surveySectionNumber |
       (sectionNumber != status.surveySectionNumber)
     ) {
-      status.ui = STATE.WAIT; // FIX: stops recording!!! need a separate survey status!!
+      status.ui = STATE.WAIT;
       status.surveySectionNumber = 0;
       status.surveySectionName = "na";
       status.surveySectionItems = 0;
@@ -694,7 +694,7 @@ function drawItem(item) {
 function drawHome() {
   console.log("Draw home");
   status.ui == STATE.WAIT;
-  widgetsHide();
+  widgetsShow();
   draw();
 }
 
