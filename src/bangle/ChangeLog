@@ -12,3 +12,4 @@
 0.102: Update advertisement; high speed acceleration; watch face
 0.200: Integrate survey events; UI options
 0.201: Integrate survey events; UI options - completed, tested
+0.202: Add configuration for HR/ACCEL data collection

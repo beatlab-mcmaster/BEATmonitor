@@ -1,4 +1,4 @@
-// BEATmonitor -- v0.201
+// BEATmonitor -- v0.202
 // Load storage module
 const storage = require("Storage");
 
@@ -84,7 +84,7 @@ function setNRF() {
 // Get device information
 const device = {
   program: "BEATwatch",
-  version: "v0.200",
+  version: "v0.202",
   firmware: process.env.VERSION,
   serial: process.env.SERIAL,
   idMAC: NRF.getAddress(),
@@ -106,6 +106,19 @@ var settings = {
   highSpeedPollRate: 40,
   showUI: false,
   seatNumber: "X0",
+  writeOptionsHR: {
+    bpm: true,
+    confidence: true,
+    raw: true,
+    filt: false,
+  },
+  writeOptionsAccel: {
+    x: true,
+    y: true,
+    z: true,
+    magnitude: false,
+    difference: false,
+  },
 };
 
 // Store status
@@ -231,19 +244,23 @@ function draw() {
     g.setFontVector(30);
     g.drawString(`Seat: ${settings.seatNumber}`, 15, 90);
     g.setFontVector(20);
-    let uiHR = "--";
-    let uiAC = "--";
-    let uiSR = "--";
-    if (settings.recordHR) {
-      uiHR = "HR";
-    }
+    let uiHR = "-";
+    let uiAC = "-";
+    let uiSR = "-";
+    let uiSV = "-";
+    if (settings.recordHR) uiHR = "H";
     if (settings.recordAccel) {
-      uiAC = "AC";
+      uiAC = "A";
       if (settings.enableHighSpeed) {
         uiSR = settings.highSpeedPollRate;
       }
     }
-    g.drawString(`${device.idShortMAC}|${uiHR}|${uiAC}|${uiSR}`, 10, 157);
+    if (settings.enableSurvey) uiSV = "S";
+    g.drawString(
+      `${device.idShortMAC}|${uiHR}|${uiAC}-${uiSR}|${uiSV}`,
+      10,
+      157,
+    );
   }
 
   Bangle.drawWidgets();
@@ -349,8 +366,6 @@ function stopStreaming() {
 
 // ---------------------------- Configure settings ----------------------------
 function sendSettings() {
-  // FIX: This sporadically causes error on BEATwatch (when recording?):
-  // 'Uncaught Error: Can't write in this mode at beatmonitor.app.js:25:1'
   Bluetooth.println(JSON.stringify(device));
   Bluetooth.println(JSON.stringify(settings));
 }
@@ -382,7 +397,6 @@ function updateSettings() {
     Bangle.setPollInterval(settings.highSpeedPollRate);
   }
   if (settings.enableSurvey) {
-    // Try to read survey
     if (storage.readJSON("beatSurvey.json")) {
       survey = storage.readJSON("beatSurvey.json");
     } else {
@@ -520,7 +534,7 @@ function getDrift(serverTime) {
 }
 
 // ---------------------------- Record HR / PPG data --------------------------
-// Default interval is 80ms; this replaces the setInterval + period workaround
+// Default interval is 40ms (80ms accel); this replaces the setInterval + period workaround
 //  - https://www.espruino.com/Reference#l_Bangle_setPollInterval
 //Bangle.setPollInterval(40);
 
@@ -536,13 +550,16 @@ function getHR(hrm) {
       // Write diff from start of record to save space
       let ts = Math.round(Date.now() - status.startTimestamp);
       // Create row with unix time and hr data
-      let obs = [
-        ts,
-        Math.round(hrm.bpm * 10), // save decimal, div by 10 later
-        hrm.confidence,
-        hrm.raw,
-        hrm.filt,
-      ].join(",");
+      let obs = [];
+      obs.push(ts);
+      for (opt in settings.writeOptionsHR) {
+        if (settings.writeOptionsHR[opt]) {
+          if (hrm[opt]) obs.push(hrm[opt]);
+        } else {
+          obs.push("");
+        }
+      }
+      obs = obs.join(",");
       // Write to file
       dataSensor.write(obs + "\n");
     } else if (status.state == STATE.STREAMING) {
@@ -575,14 +592,16 @@ function getHR(hrm) {
 function procAccel(xyz) {
   if (settings.recordAccel & (status.state == STATE.RECORDING)) {
     let ts = Math.round(Date.now() - status.startTimestamp);
-    let obs = [
-      ts,
-      Math.round(xyz.x * 1000),
-      Math.round(xyz.y * 1000),
-      Math.round(xyz.z * 1000),
-      Math.round(xyz.mag * 1000),
-      Math.round(xyz.diff * 1000),
-    ].join(",");
+    let obs = [];
+    obs.push(ts);
+    for (opt in settings.writeOptionsAccel) {
+      if (settings.writeOptionsAccel[opt]) {
+        if (xyz[opt]) obs.push(Math.round(xyz[opt] * 1000));
+      } else {
+        obs.push("");
+      }
+    }
+    obs = obs.join(",");
     dataSensor.write("A" + obs + "\n");
     status.accelCollected++;
   }
@@ -590,10 +609,8 @@ function procAccel(xyz) {
 
 // -------------------------------- Survey functions --------------------------
 function initSection(sectionNumber) {
-  console.log(`Initialize section: ${sectionNumber}`);
   buzz().then(() => {
     let d = new Date();
-    console.log(`${d.toISOString()} -- Done`); // TODO: remove
     if (sectionNumber > 0) {
       updateSectionStatus(sectionNumber);
     } else {
@@ -603,9 +620,7 @@ function initSection(sectionNumber) {
 }
 
 function updateSectionStatus(sectionNumber) {
-  console.log("updating section status");
   if (survey) {
-    console.log("Survey exists");
     if (
       (sectionNumber == 0) |
       !status.surveySectionNumber |
@@ -624,7 +639,6 @@ function updateSectionStatus(sectionNumber) {
       status.surveySectionItems = section["questions"].length;
       status.surveyItemNumber++;
       if (status.surveyItemNumber > status.surveySectionItems) {
-        console.log("Section complete");
         updateSectionStatus(0);
       } else {
         const item = getSectionItem(
@@ -641,17 +655,12 @@ function updateSectionStatus(sectionNumber) {
 }
 
 function getSectionItem(sectionNumber, sectionName, itemNumber) {
-  console.log(
-    `getting Section: ${sectionNumber}, Name: ${sectionName} Item: ${itemNumber}`,
-  );
   const item = survey[sectionNumber]["questions"][itemNumber - 1];
   return item;
 }
 
 function drawItem(item) {
   status.ui = STATE.SURVEY_ACTIVE;
-  console.log("Draw item");
-  console.log(JSON.stringify(item));
 
   // Create data for the current question
   currentQuestion = {
@@ -686,13 +695,11 @@ function drawItem(item) {
       (numberInput = true),
     );
   } else {
-    console.log("Not a valid input!");
   }
   drawControls();
 }
 
 function drawHome() {
-  console.log("Draw home");
   status.ui == STATE.WAIT;
   widgetsShow();
   draw();
@@ -701,14 +708,12 @@ function drawHome() {
 // Vibrate and light up watch n number of times
 //   Parameters: the number of times to 'buzz' the participant
 function buzz(nTimes) {
-  console.log("Buzz called");
-  nTimes = nTimes || 7;
+  nTimes = nTimes || 3;
   let count = 0;
   return new Promise((resolve) => {
     function doBuzz() {
       count++;
       let d = new Date();
-      console.log(`${d.toISOString()} -- Buzz ${count}`); // TODO: remove
       Bangle.buzz(150);
       Bangle.setBacklight(1);
       if (count < nTimes) {
@@ -881,7 +886,6 @@ Bangle.on("touch", (button, xy) => {
       xy.y > boxUp.y1 &&
       xy.y < boxUp.y2
     ) {
-      // console.log("INC");
       setResponse("INC");
     } else if (
       xy.x > boxDown.x1 &&
@@ -889,7 +893,6 @@ Bangle.on("touch", (button, xy) => {
       xy.y > boxDown.y1 &&
       xy.y < boxDown.y2
     ) {
-      // console.log("DEC");
       setResponse("DEC");
     }
   } else if (status.ui == STATE.WAIT) {
@@ -940,7 +943,6 @@ setWatch(
 let nPress = 0;
 
 function setResponse(direction) {
-  console.log(direction, currentQuestion.response, currentQuestion.range);
   if (currentQuestion.response == "NA") {
     currentQuestion.response = currentQuestion.range[0];
   }
