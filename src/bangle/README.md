@@ -292,3 +292,18 @@ Also, see instructions from the [firmware update documentation](https://www.espr
 [Tutorials](https://www.espruino.com/Bangle.js2#tutorials)
 
 [API reference](https://www.espruino.com/Reference#software)
+
+
+## Issue log
+
+### Recording when storage is full
+
+Dashboard printing an error:
+
+```
+'Uncaught Error: Can't write in this mode at beatmonitor.app.js:25:1'
+```
+
+Watch must be stopped by holding side button
+
+TODO: check/warn when capacity is reached.
